@@ -36,7 +36,7 @@ const components = [
 
 export function NavBar() {
   return (
-    <div className="border-2 h-24">
+    <div className="border-b border-[#373E11] h-24">
         <div className="flex items-center justify-between px-4 py-2">
             <Image
                     className="float-left mt-[-34px]"
@@ -87,25 +87,23 @@ export function NavBar() {
 export default NavBar
 
 const ListItem = React.forwardRef(({ className, title, children, ...props }, ref) => {
-    return (
-      <li>
-        <NavigationMenuLink asChild>
-          <a
-            ref={ref}
-            className={cn(
-              "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-              className
-            )}
-            {...props}
-          >
-            <div className="text-sm font-medium leading-none">{title}</div>
-            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-              {children}
-            </p>
-          </a>
-        </NavigationMenuLink>
-      </li>
-    );
-  });
+  return (
+    <li>
+      <NavigationMenuLink asChild>
+        <a
+          ref={ref}
+          className={cn(
+            "select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors min-h-[50px] flex items-center justify-center text-sm font-medium hover:bg-[#373E11]  hover:text-white",
+            className
+          )}
+          {...props}
+        >
+          {title}
+        </a>
+      </NavigationMenuLink>
+    </li>
+  );
+});
+
   
   ListItem.displayName = "ListItem";
