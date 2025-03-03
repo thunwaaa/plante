@@ -72,7 +72,7 @@ export function NavBar() {
                     <NavigationMenuItem>
                     <Link href="/" legacyBehavior passHref>
                             <NavigationMenuLink className={`${navigationMenuTriggerStyle()} text-xl`}>
-                                About 
+                                About
                             </NavigationMenuLink>
                         </Link>
                     </NavigationMenuItem>
