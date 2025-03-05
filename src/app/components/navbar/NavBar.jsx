@@ -43,7 +43,7 @@ export function NavBar() {
                     src="/logo.png"
                     alt="logo"
                     width={160}
-                    height={0}
+                    height={10}
                 />
             <NavigationMenu>
                 <NavigationMenuList className="flex gap-4 mt-[-41px]">
@@ -93,7 +93,7 @@ const ListItem = React.forwardRef(({ className, title, children, ...props }, ref
         <a
           ref={ref}
           className={cn(
-            "select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors min-h-[50px] flex items-center justify-center text-sm font-medium hover:bg-[#373E11]  hover:text-white",
+            "select-none space-y-1 rounded-md p-4 leading-none no-underline outline-none transition-colors min-h-[60px] flex items-center justify-center text-[18px] text-center font-normal hover:bg-[#373E11]  hover:text-white",
             className
           )}
           {...props}
