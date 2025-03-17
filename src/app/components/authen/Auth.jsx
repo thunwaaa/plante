@@ -58,7 +58,7 @@ export const Auth = () => {
   return (
     <div 
       ref={containerRef}
-      className="flex text-xl items-center p-2 mt-[-46px]"
+      className="flex text-xl items-center p-2"
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
     >
