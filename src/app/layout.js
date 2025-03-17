@@ -14,13 +14,12 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <div>
-      <NavBar />
-      <html lang="en" className={gelasioSans.variable}>
-        <body>
-          {children}
-        </body>
-      </html>
-    </div>
+    <html lang="en" className={gelasioSans.variable}>
+      <head />
+      <body>
+        <NavBar />
+        {children}
+      </body>
+    </html>
   );
 }
