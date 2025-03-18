@@ -69,7 +69,7 @@ export const Auth = () => {
           ${getButtonStyles('signin')}
         `}
       >
-        <a href="/">Sign in</a>
+        <a href="/login">Sign in</a>
       </button>
       <button 
         ref={signupButtonRef}
@@ -78,7 +78,7 @@ export const Auth = () => {
           ${getButtonStyles('signup')}
         `}
       >
-        <a href="/">Sign up</a>
+        <a href="/signup">Sign up</a>
       </button>
     </div>
   );

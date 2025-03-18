@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -26,6 +27,8 @@ const components = [
 export function NavBar() {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [isServicesOpen, setIsServicesOpen] = React.useState(false);
+  const pathname = usePathname();
+  if (pathname === "/login" || pathname === "/signup") return null;
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
