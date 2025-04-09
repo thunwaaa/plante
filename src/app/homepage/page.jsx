@@ -6,6 +6,10 @@ import { ArrowLeft } from "lucide-react";
 export default function Home() {
   return (
     <>
+    <div className="flex justify-center">
+
+      <button className="border rounded-2xl p-2"><a href="dashboard">dashboard</a></button>
+    </div>
       <div className="border-b h-auto">
         <div className="flex justify-between m-4">
           <p className="text-5xl lg:text-6xl max-md:text-2xl max-sm:text-lg max-sm:m-2 mx-5 my-9 lg:my-16 lg:mx-10">LET US HELP YOU <br /> TAKE CARE <br /> YOUR PLANT</p>
