@@ -1,6 +1,6 @@
-"use client"
+'use client'
 import React, { useState, useRef, useEffect } from 'react';
-
+import Link from 'next/link';
 export const Auth = () => {
   const [hoveredButton, setHoveredButton] = useState(null);
   const containerRef = useRef(null);
@@ -69,7 +69,7 @@ export const Auth = () => {
           ${getButtonStyles('signin')}
         `}
       >
-        <a href="/login">Sign in</a>
+        <Link href="/login">Sign in</Link>
       </button>
       <button 
         ref={signupButtonRef}
@@ -78,7 +78,7 @@ export const Auth = () => {
           ${getButtonStyles('signup')}
         `}
       >
-        <a href="/signup">Sign up</a>
+        <Link href="/signup">Sign up</Link>
       </button>
     </div>
   );

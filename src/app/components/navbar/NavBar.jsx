@@ -1,5 +1,4 @@
-"use client";
-
+"use client"
 import * as React from "react";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -60,11 +59,9 @@ export function NavBar() {
             <NavigationMenu>
               <NavigationMenuList className="flex gap-4">
                 <NavigationMenuItem>
-                  <Link href="/" passHref>
-                    <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "text-xl")}>
-                      Home
-                    </NavigationMenuLink>
-                  </Link>
+                  <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "text-xl")}>
+                    <Link href="/" passHref>Home</Link>
+                  </NavigationMenuLink>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
                   <NavigationMenuTrigger className="text-xl">Services</NavigationMenuTrigger>
@@ -77,11 +74,9 @@ export function NavBar() {
                   </NavigationMenuContent>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
-                  <Link href="/" passHref>
                     <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "text-xl")}>
-                      About
+                      <Link href='/' passHref>About</Link>         
                     </NavigationMenuLink>
-                  </Link>
                 </NavigationMenuItem>
               </NavigationMenuList>
             </NavigationMenu>
@@ -161,7 +156,7 @@ const ListItem = React.forwardRef(({ className, title, ...props }, ref) => {
   return (
     <li>
       <NavigationMenuLink asChild>
-        <a
+        <Link
           href={ref}
           className={cn(
             "select-none space-y-1 rounded-md p-4 leading-none no-underline outline-none transition-colors min-h-[60px] flex items-center justify-center text-[18px] text-center font-normal hover:bg-[#373E11] hover:text-white",
@@ -170,7 +165,7 @@ const ListItem = React.forwardRef(({ className, title, ...props }, ref) => {
           {...props}
         >
           {title}
-        </a>
+        </Link>
       </NavigationMenuLink>
     </li>
   );
