@@ -2,13 +2,14 @@
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
 import { ArrowLeft } from "lucide-react";
-
+import Link from "next/link";
 export default function Home() {
   return (
     <>
     <div className="flex justify-center">
-
-      <button className="border rounded-2xl p-2"><a href="dashboard">dashboard</a></button>
+      <button className="border rounded-2xl p-2">
+        <Link href="/dashboard">dashboard</Link>
+      </button>
     </div>
       <div className="border-b h-auto">
         <div className="flex justify-between m-4">
