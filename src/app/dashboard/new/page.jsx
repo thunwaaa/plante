@@ -26,7 +26,7 @@ import {
 const page = () => {
   const [name, setName] = useState('')
   const [type, setType] = useState('')
-  const [plantingDate, setPlantingDate] = useState(null)
+  const [plantheight, setPlantHeight] = useState('')
   const [date, setDate] = useState(Date)
   const router = useRouter()
 
@@ -114,6 +114,21 @@ const page = () => {
                   </SelectGroup>
                 </SelectContent>
               </Select>
+            </div>
+
+            <div className='w-64 md:w-[calc(50%-1rem)]'>
+              <p>ความสูงของต้นไม้ (CM.)</p>
+              <input 
+                type="number" 
+                value={plantheight}
+                onChange={(e) => setPlantHeight(e.target.value)}
+                className='border rounded-2xl p-1.5 w-64 font-bold'
+                required
+              />
+            </div>
+
+            <div>
+              
             </div>
           </div>
         </form>
