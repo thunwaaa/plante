@@ -18,8 +18,8 @@ import Auth from "../authen/Auth";
 
 const components = [
   { title: "แจ้งเตือนการรดน้ำ", href: "/" },
-  { title: "แนะนำพืชที่เหมาะสมกับสภาพแวดล้อม", href: "/" },
-  { title: "วิเคราะห์ปัญหาต้นไม้", href: "/" },
+  { title: "แนะนำพืชที่เหมาะสมกับสภาพแวดล้อม", href: "/recommend" },
+  { title: "วิเคราะห์ปัญหาต้นไม้", href: "/diagnosis" },
   { title: "สมุดจดบันทึกต้นไม้", href: "/" },
 ];
 
