@@ -43,18 +43,19 @@ const page = () => {
   return (
     <>
       <h2 className='text-2xl font-bold m-4 flex justify-center'>เพิ่มข้อมูลต้นไม้</h2>
-      <div className='flex justify-center'>
-        <Input 
-          type="text" 
-          placeholder='ชื่อต้นไม้'
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          className='border-black rounded-2xl p-4 w-64 font-bold'
-          required
-        />
-      </div>
       <div className='flex justify-center items-center mt-8'>
         <form onSubmit={handleSubmit} className='space-y-4'>
+          <div>
+            <Input 
+              type="text" 
+              placeholder='ชื่อต้นไม้'
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className='border-black rounded-2xl p-4 w-64 font-bold'
+              required
+            />
+          </div>
+
           <div className='flex flex-wrap justify-center max-w-4xl gap-x-8 gap-y-4'>
             <div className='w-64 md:w-[calc(50%-1rem)]'>
               <p>ประเภทพืช</p>
@@ -116,21 +117,31 @@ const page = () => {
               </Select>
             </div>
 
-            <div className='w-64 md:w-[calc(50%-1rem)]'>
-              <p>ความสูงของต้นไม้ (CM.)</p>
-              <input 
-                type="number" 
-                value={plantheight}
-                onChange={(e) => setPlantHeight(e.target.value)}
-                className='border rounded-2xl p-1.5 w-64 font-bold'
-                required
-              />
+            <div className="w-64 md:w-[calc(50%-1rem)]">
+                <p>ความสูงของต้นไม้</p>
+                <input 
+                    type="number" 
+                    className='border border-black rounded-2xl w-full p-1.5'
+                    placeholder='กรอกขนาดพื้นที่'
+                    required
+                />
             </div>
-
             <div>
-              
+              <button
+                type="submit"
+                className="border-[#373E11] text-[#373E11] border mx-auto rounded-2xl p-2 w-50 mt-8 mr-4"
+              >
+                ยกเลิก
+              </button>
+              <button
+                type="submit"
+                className="text-[#E6E4BB] bg-[#373E11] mx-auto rounded-2xl p-2 w-50 mt-8"
+              >
+                บันทึก
+              </button>
             </div>
           </div>
+
         </form>
       </div>
 
