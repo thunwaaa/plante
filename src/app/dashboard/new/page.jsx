@@ -26,7 +26,7 @@ import {
 const page = () => {
   const [name, setName] = useState('')
   const [type, setType] = useState('')
-  const [plantingDate, setPlantingDate] = useState(null)
+  const [plantheight, setPlantHeight] = useState('')
   const [date, setDate] = useState(Date)
   const router = useRouter()
 
