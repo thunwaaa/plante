@@ -1,6 +1,6 @@
 'use client'
 import * as React from "react"
-import {useState} from "react"
+import {useState, useEffect} from "react"
 import { useRouter } from 'next/navigation'
 import {
   Select,
@@ -11,6 +11,14 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
+import {
+    Form,
+    FormControl,
+    FormField,
+    FormItem,
+    FormLabel,
+    FormMessage,
+  } from '@/components/ui/form';
 import { Input } from '@/components/ui/input'
 import { format } from 'date-fns'
 import { Calendar1Icon } from 'lucide-react'
@@ -26,25 +34,71 @@ import {
 const page = () => {
   const [name, setName] = useState('')
   const [type, setType] = useState('')
-  const [plantheight, setPlantHeight] = useState('')
+  const [container, setContainer] = useState('')
+  const [plantHeight, setPlantHeight] = useState('')
   const [date, setDate] = useState(Date)
+  const [imageFile, setImageFile] = useState(null);
   const router = useRouter()
 
   const handleSubmit = (e) => {
     e.preventDefault()
-
-    //save data
-    const treeData = {name, type}
-    localStorage.setItem('treeData', JSON.stringify(treeData))
-
+    const newTree = {
+      name,
+      type,
+      plantHeight,
+      date,
+      image: imageFile ? (imageFile.preview || URL.createObjectURL(imageFile)) : null,
+    }
+  
+    const list = JSON.parse(localStorage.getItem('treeDataList') || '[]')
+    const editIndex = localStorage.getItem('editTreeIndex')
+  
+    if (editIndex !== null) {
+      list[+editIndex] = newTree
+      localStorage.removeItem('editTreeIndex')
+    } else {
+      list.push(newTree)
+    }
+  
+    localStorage.setItem('treeDataList', JSON.stringify(list))
     router.push('/dashboard')
   }
+
+  useEffect(() => {
+    const index = localStorage.getItem('editTreeIndex')
+    const list = JSON.parse(localStorage.getItem('treeDataList') || '[]')
+  
+    if (index !== null && list[index]) {
+      const data = list[index]
+      setName(data.name)
+      setType(data.type)
+      setPlantHeight(data.plantheight)
+      setDate(new Date(data.date))
+      setImageFile(data.image ? { preview: data.image } : null)
+    }
+  }, [])
 
   return (
     <>
       <h2 className='text-2xl font-bold m-4 flex justify-center'>เพิ่มข้อมูลต้นไม้</h2>
       <div className='flex justify-center items-center mt-8'>
         <form onSubmit={handleSubmit} className='space-y-4'>
+        <div>
+          <label>อัพโหลดรูปภาพต้นไม้</label>
+          <Input 
+            type="file" 
+            accept="image/*" 
+            className="border-plant-beige"
+            onChange={(e) => setImageFile(e.target.files[0])}
+          />
+          {imageFile && (
+            <img 
+              src={URL.createObjectURL(imageFile)} 
+              alt="Preview" 
+              className="w-32 h-32 object-cover rounded-md mt-2"
+            />
+          )}
+        </div>
           <div>
             <Input 
               type="text" 
@@ -59,7 +113,7 @@ const page = () => {
           <div className='flex flex-wrap justify-center max-w-4xl gap-x-8 gap-y-4'>
             <div className='w-64 md:w-[calc(50%-1rem)]'>
               <p>ประเภทพืช</p>
-              <Select onChange={(e) => setType(e.target.value)} required className='border-black'>
+              <Select onValueChange={(val) => setType(val)} required className='border-black'>
                 <SelectTrigger className="w-full rounded-2xl border-black">
                   <SelectValue placeholder="เลือกประเภท" />
                 </SelectTrigger>
@@ -102,9 +156,9 @@ const page = () => {
 
             <div className='w-64 md:w-[calc(50%-1rem)]'>
               <p>ภาชนะที่ใช้ปลูก</p>
-              <Select onChange={(e) => setType(e.target.value)} required className='border-black'>
+              <Select onValueChange={(val) => setContainer(val)} required className='border-black'>
                 <SelectTrigger className="w-full rounded-2xl border-black">
-                  <SelectValue placeholder="เลือกประเภท" />
+                  <SelectValue placeholder="เลือกประเภท"/>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
@@ -120,8 +174,10 @@ const page = () => {
             <div className="w-64 md:w-[calc(50%-1rem)]">
                 <p>ความสูงของต้นไม้</p>
                 <input 
-                    type="number" 
-                    className='border border-black rounded-2xl w-full p-1.5'
+                    type="number"
+                    value={plantHeight}
+                    onChange={(e) => setPlantHeight(e.target.value)}
+                    className='border rounded-2xl w-full p-1.5'
                     placeholder='กรอกขนาดพื้นที่'
                     required
                 />
