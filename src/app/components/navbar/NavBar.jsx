@@ -20,7 +20,7 @@ const components = [
   { title: "แจ้งเตือนการรดน้ำ", href: "/" },
   { title: "แนะนำพืชที่เหมาะสมกับสภาพแวดล้อม", href: "/recommend" },
   { title: "วิเคราะห์ปัญหาต้นไม้", href: "/diagnosis" },
-  { title: "สมุดจดบันทึกต้นไม้", href: "/" },
+  { title: "สมุดจดบันทึกต้นไม้", href: "/diary" },
 ];
 
 export function NavBar() {
