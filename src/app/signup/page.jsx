@@ -9,38 +9,38 @@ const page = () => {
         {/* Right panel with sign-up form */}
         <div className='flex flex-col justify-center items-center self-center w-1/2'>
           <h1 className="text-4xl font-bold mb-8 underline">Sign up</h1>
-          <form action="" method="post" className='flex flex-col text-2xl space-y-4 w-3/4 max-w-md'>
-            <label htmlFor="name-web">Name</label>
+          <form action="" method="post" className='flex flex-col text-lg space-y-2 w-3/4 max-w-md'>
+            <label htmlFor="name-web" className='font-bold'>Name</label>
             <input 
               id='name'
               type="name" 
               required 
-              className='border border-[#373E11] rounded-lg h-16 p-2'
+              className='border border-[#373E11] rounded-lg h-12 p-2 text-lg'
               placeholder='Enter your Name'
               />
-            <label htmlFor="email-web">Email</label>
+            <label htmlFor="email-web" className='font-bold'>Email</label>
             <input 
               id='email-web'
               type="email" 
               required 
-              className='border border-[#373E11] rounded-lg h-16 p-2'
+              className='border border-[#373E11] rounded-lg h-12 p-2 text-lg'
               placeholder='Enter your Email'
               />
-            <label htmlFor="password-web">Password</label>
+            <label htmlFor="password-web" className='font-bold'>Password</label>
             <input 
               id='password-web'
               type="password"
               placeholder='Enter your Password'
-              className='border border-[#373E11] rounded-lg h-16 p-2' 
+              className='border border-[#373E11] rounded-lg h-12 p-2 text-lg' 
               />
-            <label htmlFor="password-web">Confirm Password</label>
+            <label htmlFor="password-web" className='font-bold'>Confirm Password</label>
             <input 
               id='confirm_password-web'
               type="password"
               placeholder='Repeat Password'
-              className='border border-[#373E11] rounded-lg h-16 p-2' 
+              className='border border-[#373E11] rounded-lg h-12 p-2 text-lg' 
               />
-            <button type="button" className='bg-[#373E11] text-[#E6E4BB] p-4 mt-5 rounded-2xl hover:bg-[#454b28]'>Sign up</button>
+            <button type="button" className='bg-[#373E11] text-[#E6E4BB] p-2 mt-5 rounded-2xl hover:bg-[#454b28]'>Sign up</button>
           </form>
         </div>
         {/* Left panel with sign-in CTA */}
@@ -72,7 +72,7 @@ const page = () => {
               id='Name'
               type="name" 
               required 
-              className='border border-[#373E11] rounded-lg h-14 p-2'
+              className='border border-[#373E11] rounded-lg h-12 p-2 text-lg'
               placeholder='Enter your Name'
             />
             <label htmlFor="email-mobile" className="text-xl">Email</label>
@@ -80,7 +80,7 @@ const page = () => {
               id='email-mobile'
               type="email" 
               required 
-              className='border border-[#373E11] rounded-lg h-14 p-2'
+              className='border border-[#373E11] rounded-lg h-12 p-2 text-lg'
               placeholder='Enter your Email'
             />
             <label htmlFor="password-mobile" className="text-xl">Password</label>
@@ -88,14 +88,14 @@ const page = () => {
               id='password-mobile'
               type="password"
               placeholder='Enter your Password'
-              className='border border-[#373E11] rounded-lg h-14 p-2' 
+              className='border border-[#373E11] rounded-lg h-12 p-2 text-lg' 
             />
             <label htmlFor="password-mobile" className="text-xl">Confirm Password</label>
             <input 
               id='confirm_password-mobile'
               type="password"
               placeholder='Repeat Password'
-              className='border border-[#373E11] rounded-lg h-14 p-2' 
+              className='border border-[#373E11] rounded-lg h-12 p-2 text-lg' 
             />
             <button type="button" className='bg-[#373E11] text-[#E6E4BB] p-3 mt-2 rounded-2xl hover:bg-[#454b28] text-xl'>Sign up</button>
           </form>

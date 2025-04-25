@@ -1,6 +1,6 @@
 'use client'
-import React, {useState} from 'react'
-import { Plus } from 'lucide-react'
+import React, {useState, useEffect} from 'react'
+import { Plus, Pencil, Trash2 } from 'lucide-react'
 import {
     Dialog,
     DialogContent,
@@ -39,14 +39,30 @@ import {
 } from "@/components/ui/popover"
 import { Input } from '@/components/ui/input'
 import { Smile, Meh, Frown } from 'lucide-react';
+import { useRouter } from 'next/navigation'
+
 const page = () => {
+    const router = useRouter()
     const [date, setDate] = useState(Date)
+    const [treeDataList, setTreeDataList] = useState([]);
+    const [openDialog, setOpenDialog] = useState(null);
+
+
+    useEffect(() => {
+        const stored = JSON.parse(localStorage.getItem('treeDataList') || '[]');
+        setTreeDataList(stored);
+      }, []);
+
     const handleMoodClick = (mood) => {
         form.setValue('mood', mood)
     }
+
+    const handleDetail = (index) => {
+        router.push(`/diary/detail/${index}`)
+      }
     return (
     <>
-        <div className='flex justify-center'>
+        {/* <div className='flex justify-center'>
         <h1 className='font-extrabold text-2xl md:text-4xl mt-8'>สมุดจดบันทึกต้นไม้</h1>
         </div>
         <div className='flex justify-center mt-4'>
@@ -136,6 +152,36 @@ const page = () => {
             </DialogFooter>
         </DialogContent>
         </Dialog>
+        </div> */}
+
+        <div className='flex justify-center'>
+            <h1 className='font-extrabold text-2xl md:text-4xl mt-8'>สมุดจดบันทึกต้นไม้</h1>
+        </div>
+
+        <div className="flex flex-wrap justify-center mt-8 mx-3">
+            {treeDataList.map((tree, index) => (
+                <div key={index} className="p-4 border rounded-xl w-64 shadow-md bg-[#E6E4BB] relative mx-3 mt-8">
+                    <div className="h-40 w-full bg-white rounded-md overflow-hidden mb-2 flex justify-center items-center">
+                        {tree.image && (
+                            <img
+                            src={tree.image}
+                            alt={tree.name}
+                            className="w-full h-40 object-cover rounded-md mb-2"
+                            />
+                        )}
+                    </div>
+                    <h2 className="text-xl font-bold">{tree.name}</h2>
+                    <p>ประเภท: {tree.type}</p>
+                    <p>ความสูง: {tree.plantHeight}</p>
+                    <p>วันที่ปลูก: {new Date(tree.date).toLocaleDateString()}</p>
+
+                    <div className="flex justify-center mt-4 gap-2">
+                        <button onClick={() => handleDetail(index)} className=" border hover:bg-[#373E11] mr-4 p-2 rounded-lg text-[#E6E4BB] bg-[#4f5c03]">
+                            View Details
+                        </button>
+                    </div>
+                </div>
+            ))}
         </div>
     </>
     )

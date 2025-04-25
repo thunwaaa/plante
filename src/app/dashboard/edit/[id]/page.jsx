@@ -1,7 +1,7 @@
 'use client'
-import * as React from "react"
-import {useState, useEffect} from "react"
-import { useRouter } from 'next/navigation'
+import React, { useEffect, useState} from 'react'
+import { useRouter,useParams } from 'next/navigation'
+import { Input } from '@/components/ui/input'
 import {
   Select,
   SelectContent,
@@ -19,7 +19,6 @@ import {
     FormLabel,
     FormMessage,
   } from '@/components/ui/form';
-import { Input } from '@/components/ui/input'
 import { format } from 'date-fns'
 import { Calendar1Icon } from 'lucide-react'
 import { cn } from '@/lib/utils'
@@ -30,52 +29,55 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+  
 
 const page = () => {
-  const [name, setName] = useState('')
-  const [type, setType] = useState('')
-  const [container, setContainer] = useState('')
-  const [plantHeight, setPlantHeight] = useState('')
-  const [date, setDate] = useState(Date)
-  const [imageFile, setImageFile] = useState(null);
-  const router = useRouter()
+    const {id} = useParams()
+    const router = useRouter()
+    const [name, setName] = useState('')
+    const [type, setType] = useState('')
+    const [container, setContainer] = useState('')
+    const [plantHeight, setPlantHeight] = useState('')
+    const [date, setDate] = useState(null)
+    const [imageFile, setImageFile] = useState(null);
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    const newTree = {
-      name,
-      type,
-      plantHeight,
-      date,
-      image: imageFile ? URL.createObjectURL(imageFile) : null,
-    }
-  
-    const list = JSON.parse(localStorage.getItem('treeDataList') || '[]')
-    list.push(newTree)
-    localStorage.setItem('treeDataList', JSON.stringify(list))
-    router.push('/dashboard')
-  }   
+    useEffect(() => {
+        const list = JSON.parse(localStorage.getItem('treeDataList') || '[]')
+        const data = list[+id]
+      
+        if (data) {
+          setName(data.name || '')
+          setType(data.type || '')
+          setContainer(data.container || '')
+          setPlantHeight(data.plantHeight || '')
+          setDate(data.date ? new Date(data.date) : null)
+          if (data.image) {
+            setImageFile({ preview: data.image })
+          }
+        } else {
+          router.push('/dashboard') // ถ้า id ไม่ถูกต้องให้กลับ
+        }
+      }, [id])      
 
-  useEffect(() => {
-    let previewUrl;
-    if (imageFile instanceof File) {
-      previewUrl = URL.createObjectURL(imageFile);
-    }
-  
-    return () => {
-      if (previewUrl) {
-        URL.revokeObjectURL(previewUrl);
-      }
-    };
-  }, [imageFile])  
-
-  useEffect(() => {
-    localStorage.removeItem('editTreeIndex')
-  }, [])  
+      const handleSubmit = (e) => {
+        e.preventDefault()
+        const newTree = {
+          name,
+          type,
+          plantHeight,
+          date,
+          image: imageFile ? (imageFile.preview || URL.createObjectURL(imageFile)) : null,
+        }
+      
+        const list = JSON.parse(localStorage.getItem('treeDataList') || '[]')
+        list[+id] = newTree
+        localStorage.setItem('treeDataList', JSON.stringify(list))
+        router.push('/dashboard')
+      }      
 
   return (
     <>
-      <h2 className='text-2xl font-bold m-4 flex justify-center'>เพิ่มข้อมูลต้นไม้</h2>
+      <h2 className='text-2xl font-bold m-4 flex justify-center'>แก้ไขข้อมูลต้นไม้</h2>
       <div className='flex justify-center items-center mt-8'>
         <form onSubmit={handleSubmit} className='space-y-4'>
         <div>
@@ -133,6 +135,7 @@ const page = () => {
                 <PopoverTrigger asChild>
                   <Button 
                     variant={"outline"} 
+                    disabled={true} // ล็อคถ้า edit
                     className={cn(
                       "w-full justify-start text-left border-black font-normal rounded-2xl",
                       !date && "text-muted-foreground"
@@ -204,7 +207,6 @@ const page = () => {
 
         </form>
       </div>
-
     </>
   )
 }
