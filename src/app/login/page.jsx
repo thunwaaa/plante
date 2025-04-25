@@ -28,7 +28,7 @@ const page = () => {
               id='email-web'
               type="email" 
               required 
-              className='border border-[#373E11] rounded-lg h-16 p-2'
+              className='border border-[#373E11] rounded-lg h-12 p-2 text-lg'
               placeholder='Enter your Email'
             />
             <label htmlFor="password-web">Password</label>
@@ -36,9 +36,9 @@ const page = () => {
               id='password-web'
               type="password"
               placeholder='Enter your Password'
-              className='border border-[#373E11] rounded-lg h-16 p-2' 
+              className='border border-[#373E11] rounded-lg h-12 p-2 text-lg' 
             />
-            <button type="button" className='bg-[#373E11] text-[#E6E4BB] p-4 mt-5 rounded-2xl hover:bg-[#454b28]'>Sign in</button>
+            <button type="button" className='bg-[#373E11] text-[#E6E4BB] p-2 mt-5 rounded-2xl hover:bg-[#454b28]'>Sign in</button>
           </form>
         </div>
       </div>
@@ -57,7 +57,7 @@ const page = () => {
               id='email-mobile'
               type="email" 
               required 
-              className='border border-[#373E11] rounded-lg h-14 p-2'
+              className='border border-[#373E11] rounded-lg h-12 p-2 text-lg'
               placeholder='Enter your Email'
             />
             <label htmlFor="password-mobile" className="text-xl">Password</label>
@@ -65,7 +65,7 @@ const page = () => {
               id='password-mobile'
               type="password"
               placeholder='Enter your Password'
-              className='border border-[#373E11] rounded-lg h-14 p-2' 
+              className='border border-[#373E11] rounded-lg h-12 p-2 text-lg' 
             />
             <button type="button" className='bg-[#373E11] text-[#E6E4BB] p-3 mt-5 rounded-2xl hover:bg-[#454b28] text-xl'>LOGIN</button>
           </form>

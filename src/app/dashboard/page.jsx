@@ -35,7 +35,7 @@ const page = () => {
 
   const handleEdit = (index) => {
     localStorage.setItem('editTreeIndex', index.toString())
-    router.push('/dashboard/new')
+    router.push(`/dashboard/edit/${index}`)
   }
 
   return (
@@ -53,7 +53,7 @@ const page = () => {
         </div>
       ) : (
         // ถ้ามีข้อมูลต้นไม้ → แสดงการ์ดและปุ่มเพิ่มต่อท้าย
-        <div className="flex flex-wrap justify-center gap-6 mt-8">
+        <div className="flex flex-wrap justify-center gap-6 mt-8 mx-3">
           {openDialog !== null && (
             <Dialog open={true} onOpenChange={() => setOpenDialog(null)}>
               <DialogContent>
@@ -79,7 +79,7 @@ const page = () => {
           )}
           {treeDataList.map((tree, index) => (
             <div key={index} className="p-4 border rounded-xl w-64 shadow-md bg-[#E6E4BB] relative">
-              <div className="h-40 w-full bg-white rounded-md overflow-hidden mb-2 flex justify-center items-center">
+              <div className="h-40 w-full shadow-sm rounded-md overflow-hidden mb-2 flex justify-center items-center">
                 {tree.image && (
                   <img
                     src={tree.image}
@@ -93,8 +93,8 @@ const page = () => {
               <p>ความสูง: {tree.plantHeight}</p>
               <p>วันที่ปลูก: {new Date(tree.date).toLocaleDateString()}</p>
 
-              <div className="flex justify-end mt-2 gap-2">
-                <button onClick={() => handleEdit(index)} className=" hover:text-blue-800">
+              <div className="flex justify-end mt-4 gap-2">
+                <button onClick={() => handleEdit(index)} className=" hover:text-blue-800 mr-4">
                   <Pencil size={20} />
                 </button>
                 <button onClick={() => setOpenDialog(index)} className=" hover:text-red-800">
