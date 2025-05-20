@@ -1,7 +1,63 @@
-import React from 'react'
+import React, { useState } from 'react'
 import Link from "next/link";
+import { useRouter } from 'next/navigation';
 
-const page = () => {
+const SignupPage = () => {
+  const router = useRouter();
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [error, setError] = useState('');
+
+  const handleChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.id]: e.target.value
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (formData.password !== formData.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
+
+    try {
+      const response = await fetch('http://localhost:8080/api/users/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password
+        }),
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.message || 'Signup failed');
+      }
+
+      // Store tokens
+      localStorage.setItem('token', data.token);
+      localStorage.setItem('refreshToken', data.refreshToken);
+
+      // Redirect to home page
+      router.push('/dashboard');
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
   return (
     <>
       {/* Web Sign in - Shows only on lg screens and above */}
@@ -9,38 +65,49 @@ const page = () => {
         {/* Right panel with sign-up form */}
         <div className='flex flex-col justify-center items-center self-center w-1/2'>
           <h1 className="text-4xl font-bold mb-8 underline">Sign up</h1>
-          <form action="" method="post" className='flex flex-col text-lg space-y-2 w-3/4 max-w-md'>
-            <label htmlFor="name-web" className='font-bold'>Name</label>
+          {error && <p className="text-red-500 mb-4">{error}</p>}
+          <form onSubmit={handleSubmit} className='flex flex-col text-lg space-y-2 w-3/4 max-w-md'>
+            <label htmlFor="name" className='font-bold'>Name</label>
             <input 
               id='name'
-              type="name" 
+              type="text" 
               required 
+              value={formData.name}
+              onChange={handleChange}
               className='border border-[#373E11] rounded-lg h-12 p-2 text-lg'
               placeholder='Enter your Name'
-              />
-            <label htmlFor="email-web" className='font-bold'>Email</label>
+            />
+            <label htmlFor="email" className='font-bold'>Email</label>
             <input 
-              id='email-web'
+              id='email'
               type="email" 
               required 
+              value={formData.email}
+              onChange={handleChange}
               className='border border-[#373E11] rounded-lg h-12 p-2 text-lg'
               placeholder='Enter your Email'
-              />
-            <label htmlFor="password-web" className='font-bold'>Password</label>
+            />
+            <label htmlFor="password" className='font-bold'>Password</label>
             <input 
-              id='password-web'
+              id='password'
               type="password"
+              required
+              value={formData.password}
+              onChange={handleChange}
               placeholder='Enter your Password'
               className='border border-[#373E11] rounded-lg h-12 p-2 text-lg' 
-              />
-            <label htmlFor="password-web" className='font-bold'>Confirm Password</label>
+            />
+            <label htmlFor="confirmPassword" className='font-bold'>Confirm Password</label>
             <input 
-              id='confirm_password-web'
+              id='confirmPassword'
               type="password"
+              required
+              value={formData.confirmPassword}
+              onChange={handleChange}
               placeholder='Repeat Password'
               className='border border-[#373E11] rounded-lg h-12 p-2 text-lg' 
-              />
-            <button type="button" className='bg-[#373E11] text-[#E6E4BB] p-2 mt-5 rounded-2xl hover:bg-[#454b28]'>Sign up</button>
+            />
+            <button type="submit" className='bg-[#373E11] text-[#E6E4BB] p-2 mt-5 rounded-2xl hover:bg-[#454b28]'>Sign up</button>
           </form>
         </div>
         {/* Left panel with sign-in CTA */}
@@ -66,38 +133,49 @@ const page = () => {
         </a>
         <div className='flex flex-col flex-grow justify-center items-center px-6 py-8 mt-[-96] md:mt-[-256]'>
           <h1 className="text-4xl font-bold mb-12 underline">Sign up</h1>
-          <form action="" method="post" className='flex flex-col w-full max-w-md space-y-4'>
-            <label htmlFor="name-mobile" className="text-xl">Name</label>
+          {error && <p className="text-red-500 mb-4">{error}</p>}
+          <form onSubmit={handleSubmit} className='flex flex-col w-full max-w-md space-y-4'>
+            <label htmlFor="name" className="text-xl">Name</label>
             <input 
-              id='Name'
-              type="name" 
+              id='name'
+              type="text" 
               required 
+              value={formData.name}
+              onChange={handleChange}
               className='border border-[#373E11] rounded-lg h-12 p-2 text-lg'
               placeholder='Enter your Name'
             />
-            <label htmlFor="email-mobile" className="text-xl">Email</label>
+            <label htmlFor="email" className="text-xl">Email</label>
             <input 
-              id='email-mobile'
+              id='email'
               type="email" 
               required 
+              value={formData.email}
+              onChange={handleChange}
               className='border border-[#373E11] rounded-lg h-12 p-2 text-lg'
               placeholder='Enter your Email'
             />
-            <label htmlFor="password-mobile" className="text-xl">Password</label>
+            <label htmlFor="password" className="text-xl">Password</label>
             <input 
-              id='password-mobile'
+              id='password'
               type="password"
+              required
+              value={formData.password}
+              onChange={handleChange}
               placeholder='Enter your Password'
               className='border border-[#373E11] rounded-lg h-12 p-2 text-lg' 
             />
-            <label htmlFor="password-mobile" className="text-xl">Confirm Password</label>
+            <label htmlFor="confirmPassword" className="text-xl">Confirm Password</label>
             <input 
-              id='confirm_password-mobile'
+              id='confirmPassword'
               type="password"
+              required
+              value={formData.confirmPassword}
+              onChange={handleChange}
               placeholder='Repeat Password'
               className='border border-[#373E11] rounded-lg h-12 p-2 text-lg' 
             />
-            <button type="button" className='bg-[#373E11] text-[#E6E4BB] p-3 mt-2 rounded-2xl hover:bg-[#454b28] text-xl'>Sign up</button>
+            <button type="submit" className='bg-[#373E11] text-[#E6E4BB] p-3 mt-2 rounded-2xl hover:bg-[#454b28] text-xl'>Sign up</button>
           </form>
           
           {/* Mobile sign-up CTA */}
@@ -110,4 +188,4 @@ const page = () => {
   )
 }
 
-export default page
+export default SignupPage
