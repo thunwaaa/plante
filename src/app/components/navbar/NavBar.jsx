@@ -1,6 +1,6 @@
 "use client"
 import * as React from "react";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 import {
@@ -13,8 +13,7 @@ import {
   navigationMenuTriggerStyle,
 } from "@/components/ui/navigation-menu";
 import Link from "next/link";
-import { X, Menu, ChevronUp, ChevronDown } from "lucide-react";
-import Auth from "../authen/Auth";
+import { X, Menu, ChevronUp, ChevronDown, LogOut } from "lucide-react";
 
 const components = [
   { title: "แจ้งเตือนการรดน้ำ", href: "/" },
@@ -26,16 +25,47 @@ const components = [
 export function NavBar() {
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
   const [isServicesOpen, setIsServicesOpen] = React.useState(false);
+  const [isLoggedIn, setIsLoggedIn] = React.useState(false);
+  const router = useRouter();
   const pathname = usePathname();
+
+  // Check login status on component mount and listen for login events
+  React.useEffect(() => {
+    const checkLoginStatus = () => {
+      const token = localStorage.getItem('token');
+      setIsLoggedIn(!!token);
+    };
+
+    // Check initial login status
+    checkLoginStatus();
+
+    // Listen for login events
+    window.addEventListener('login', checkLoginStatus);
+
+    // Cleanup
+    return () => {
+      window.removeEventListener('login', checkLoginStatus);
+    };
+  }, []);
+
   if (pathname === "/login" || pathname === "/signup") return null;
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
-    if (isMenuOpen) setIsServicesOpen(false); // Close services dropdown when closing the menu
+    if (isMenuOpen) setIsServicesOpen(false);
   };
 
   const toggleServices = () => {
     setIsServicesOpen(!isServicesOpen);
+  };
+
+  const handleLogout = () => {
+    // Clear tokens
+    localStorage.removeItem('token');
+    localStorage.removeItem('refreshToken');
+    setIsLoggedIn(false);
+    // Redirect to home page
+    router.push('/');
   };
 
   return (
@@ -74,17 +104,34 @@ export function NavBar() {
                   </NavigationMenuContent>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
-                    <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "text-xl")}>
-                      <Link href='/' passHref>About</Link>         
-                    </NavigationMenuLink>
+                  <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "text-xl")}>
+                    <Link href='/' passHref>About</Link>         
+                  </NavigationMenuLink>
                 </NavigationMenuItem>
               </NavigationMenuList>
             </NavigationMenu>
           </div>
 
-          {/* Login Button */}
-          <div className="flex items-center">
-            <Auth />
+          {/* Auth Buttons */}
+          <div className="flex items-center gap-4">
+            {isLoggedIn ? (
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 px-4 py-2 bg-[#373E11] text-[#E6E4BB] rounded-lg hover:bg-[#454b28] transition-colors"
+              >
+                <LogOut className="h-5 w-5" />
+                <span>Logout</span>
+              </button>
+            ) : (
+              <div className="flex gap-4">
+                <Link href="/login" className="px-4 py-2 text-[#373E11] hover:text-[#454b28] transition-colors">
+                  Login
+                </Link>
+                <Link href="/signup" className="px-4 py-2 bg-[#373E11] text-[#E6E4BB] rounded-lg hover:bg-[#454b28] transition-colors">
+                  Sign up
+                </Link>
+              </div>
+            )}
           </div>
         </div>
       </div>
@@ -137,11 +184,30 @@ export function NavBar() {
                       </ul>
                     </motion.div>
                   )}
-              </AnimatePresence>
+                </AnimatePresence>
               </div>
               <Link href="/" className="text-xl py-2 w-full text-center border-[#373E11] hover:text-[#E6E4BB] hover:bg-[#373E11]">
                 About
               </Link>
+              {/* Mobile Auth Buttons */}
+              {isLoggedIn ? (
+                <button
+                  onClick={handleLogout}
+                  className="w-full text-xl py-2 text-center border-[#373E11] flex items-center justify-center hover:text-[#E6E4BB] hover:bg-[#373E11]"
+                >
+                  <LogOut className="mr-2 h-5 w-5" />
+                  Logout
+                </button>
+              ) : (
+                <>
+                  <Link href="/login" className="text-xl py-2 w-full text-center border-[#373E11] hover:text-[#E6E4BB] hover:bg-[#373E11]">
+                    Login
+                  </Link>
+                  <Link href="/signup" className="text-xl py-2 w-full text-center border-[#373E11] hover:text-[#E6E4BB] hover:bg-[#373E11]">
+                    Sign up
+                  </Link>
+                </>
+              )}
             </div>
           </motion.div>
         )}

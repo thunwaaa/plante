@@ -59,7 +59,7 @@ func Signup() gin.HandlerFunc {
 		user.Updated_at = time.Now()
 		user.ID = primitive.NewObjectID()
 		user.User_id = user.ID.Hex()
-		accessToken, refreshToken := helpers.GenerateTokens(*user.Email, user.User_id, *user.Role)
+		accessToken, refreshToken := helpers.GenerateTokens(*user.Email, user.User_id, "USER")
 		user.Token = &accessToken
 		user.Refresh_token = &refreshToken
 
@@ -101,7 +101,7 @@ func Login() gin.HandlerFunc {
 			return
 		}
 
-		token, refreshToken := helpers.GenerateTokens(*foundUser.Email, *&foundUser.User_id, *foundUser.Role)
+		token, refreshToken := helpers.GenerateTokens(*foundUser.Email, *&foundUser.User_id, "USER")
 		helpers.UpdateAllTokens(token, refreshToken, foundUser.User_id)
 
 		c.JSON(http.StatusOK, gin.H{
@@ -194,5 +194,44 @@ func GetUsers() gin.HandlerFunc {
 
 		// Return the list of users
 		c.JSON(http.StatusOK, users)
+	}
+}
+
+func Logout() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		// Get claims from the context
+		claims, exists := c.Get("claims")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			return
+		}
+
+		// Type assertion to get the claims object
+		tokenClaims, ok := claims.(*helpers.Claims)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid claims"})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		// Update user document to clear tokens
+		updateObj := bson.D{
+			{"$set", bson.D{
+				{"token", ""},
+				{"refresh_token", ""},
+				{"updated_at", time.Now()},
+			}},
+		}
+
+		filter := bson.M{"user_id": tokenClaims.UserID}
+		_, err := userCollection.UpdateOne(ctx, filter, updateObj)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error logging out"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"message": "Successfully logged out"})
 	}
 }
