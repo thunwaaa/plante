@@ -1,3 +1,5 @@
+'use client'
+
 import React, { useState } from 'react'
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
@@ -29,7 +31,7 @@ const SignupPage = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:8080/api/users/signup', {
+      const response = await fetch('http://localhost:8080/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -50,6 +52,9 @@ const SignupPage = () => {
       // Store tokens
       localStorage.setItem('token', data.token);
       localStorage.setItem('refreshToken', data.refreshToken);
+
+      // Dispatch login event
+      window.dispatchEvent(new Event('login'));
 
       // Redirect to home page
       router.push('/dashboard');
