@@ -2,6 +2,7 @@
 import * as React from "react"
 import {useState, useEffect} from "react"
 import { useRouter } from 'next/navigation'
+import { plantApi } from '@/lib/api'
 import {
   Select,
   SelectContent,
@@ -36,24 +37,35 @@ const page = () => {
   const [type, setType] = useState('')
   const [container, setContainer] = useState('')
   const [plantHeight, setPlantHeight] = useState('')
-  const [date, setDate] = useState(Date)
+  const [date, setDate] = useState(new Date())
   const [imageFile, setImageFile] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const router = useRouter()
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault()
-    const newTree = {
-      name,
-      type,
-      plantHeight,
-      date,
-      image: imageFile ? URL.createObjectURL(imageFile) : null,
+    setLoading(true)
+    setError(null)
+
+    try {
+      const plantData = {
+        name,
+        type,
+        container,
+        plant_height: parseFloat(plantHeight),
+        plant_date: date.toISOString(),
+        image_url: imageFile ? URL.createObjectURL(imageFile) : 'https://placehold.co/400x400?text=Plant+Image'
+      }
+
+      await plantApi.createPlant(plantData)
+      router.push('/dashboard')
+    } catch (err) {
+      setError('ไม่สามารถบันทึกข้อมูลต้นไม้ได้ กรุณาลองใหม่อีกครั้ง')
+      console.error('Error creating plant:', err)
+    } finally {
+      setLoading(false)
     }
-  
-    const list = JSON.parse(localStorage.getItem('treeDataList') || '[]')
-    list.push(newTree)
-    localStorage.setItem('treeDataList', JSON.stringify(list))
-    router.push('/dashboard')
   }   
 
   useEffect(() => {
@@ -69,35 +81,31 @@ const page = () => {
     };
   }, [imageFile])  
 
-  useEffect(() => {
-    localStorage.removeItem('editTreeIndex')
-  }, [])  
-
   return (
     <>
       <h2 className='text-2xl font-bold m-4 flex justify-center'>เพิ่มข้อมูลต้นไม้</h2>
+      {error && (
+        <div className="text-red-600 text-center mb-4">{error}</div>
+      )}
       <div className='flex justify-center items-center mt-8'>
         <form onSubmit={handleSubmit} className='space-y-4'>
-        <div>
-          <label>อัพโหลดรูปภาพต้นไม้</label>
-          <Input 
-            type="file" 
-            accept="image/*" 
-            className="border-plant-beige transition duration-150 hover:bg-[#373E11] hover:text-[#E6E4BB]"
-            onChange={(e) => setImageFile(e.target.files[0])}
-          />
-          {imageFile && (
-            <img 
-              src={
-                imageFile instanceof File
-                  ? URL.createObjectURL(imageFile)
-                  : imageFile.preview // กรณี edit
-              } 
-              alt="Preview" 
-              className="w-32 h-32 object-cover rounded-md mt-2"
+          <div>
+            <label>อัพโหลดรูปภาพต้นไม้</label>
+            <Input 
+              type="file" 
+              accept="image/*" 
+              className="border-plant-beige transition duration-150 hover:bg-[#373E11] hover:text-[#E6E4BB]"
+              onChange={(e) => setImageFile(e.target.files[0])}
+              disabled={loading}
             />
-          )}
-        </div>
+            {imageFile && (
+              <img 
+                src={URL.createObjectURL(imageFile)}
+                alt="Preview" 
+                className="w-32 h-32 object-cover rounded-md mt-2"
+              />
+            )}
+          </div>
           <div>
             <Input 
               type="text" 
@@ -106,13 +114,20 @@ const page = () => {
               onChange={(e) => setName(e.target.value)}
               className='border-black rounded-2xl p-4 w-64 font-bold'
               required
+              disabled={loading}
             />
           </div>
 
           <div className='flex flex-wrap justify-center max-w-4xl gap-x-8 gap-y-4'>
             <div className='w-64 md:w-[calc(50%-1rem)]'>
               <p>ประเภทพืช</p>
-              <Select value={type} onValueChange={(val) => setType(val)} required className='border-black'>
+              <Select 
+                value={type} 
+                onValueChange={(val) => setType(val)} 
+                required 
+                className='border-black'
+                disabled={loading}
+              >
                 <SelectTrigger className="w-full rounded-2xl border-black">
                   <SelectValue placeholder="เลือกประเภท" />
                 </SelectTrigger>
@@ -137,6 +152,7 @@ const page = () => {
                       "w-full justify-start text-left border-black font-normal rounded-2xl",
                       !date && "text-muted-foreground"
                     )}
+                    disabled={loading}
                   >
                     <Calendar1Icon />
                     {date ? format(date, "PPP") : <span>เลือกวันที่</span>}
@@ -148,6 +164,7 @@ const page = () => {
                     selected={date}
                     onSelect={setDate}
                     initialFocus
+                    disabled={loading}
                   />
                 </PopoverContent>
               </Popover>
@@ -155,31 +172,40 @@ const page = () => {
 
             <div className='w-64 md:w-[calc(50%-1rem)]'>
               <p>ภาชนะที่ใช้ปลูก</p>
-              <Select value={container} onValueChange={(val) => setContainer(val)} required className='border-black'>
+              <Select 
+                value={container} 
+                onValueChange={(val) => setContainer(val)} 
+                required 
+                className='border-black'
+                disabled={loading}
+              >
                 <SelectTrigger className="w-full rounded-2xl border-black">
                   <SelectValue placeholder="เลือกประเภท"/>
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="ไม้ผล">ไม้ผล</SelectItem>
-                    <SelectItem value="ไม้ดอก">ไม้ดอก</SelectItem>
-                    <SelectItem value="ไม้ประดับ">ไม้ประดับ</SelectItem>
-                    <SelectItem value="สมุนไพร">สมุนไพร</SelectItem>
+                    <SelectItem value="กระถาง">กระถาง</SelectItem>
+                    <SelectItem value="ถุงพลาสติก">ถุงพลาสติก</SelectItem>
+                    <SelectItem value="กระบะ">กระบะ</SelectItem>
+                    <SelectItem value="แปลงดิน">แปลงดิน</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="w-64 md:w-[calc(50%-1rem)]">
-                <p>ความสูงของต้นไม้</p>
-                <input 
-                    type="number"
-                    value={plantHeight}
-                    onChange={(e) => setPlantHeight(e.target.value)}
-                    className='border rounded-2xl w-full p-1.5'
-                    placeholder='กรอกขนาดพื้นที่'
-                    required
-                />
+              <p>ความสูงของต้นไม้ (เซนติเมตร)</p>
+              <input 
+                type="number"
+                value={plantHeight}
+                onChange={(e) => setPlantHeight(e.target.value)}
+                className='border rounded-2xl w-full p-1.5'
+                placeholder='กรอกความสูง'
+                required
+                disabled={loading}
+                min="0"
+                step="0.1"
+              />
             </div>
           </div>
           <div className='flex justify-center'>
@@ -187,24 +213,23 @@ const page = () => {
               type="button"
               onClick={(e) => {
                 e.preventDefault();
-                e.stopPropagation();
                 router.push('/dashboard');
               }}
               className="border-[#373E11] text-[#373E11] border mx-auto rounded-2xl p-2 w-50 mt-8 mr-4"
+              disabled={loading}
             >
               ยกเลิก
             </button>
             <button
               type="submit"
               className="text-[#E6E4BB] bg-[#373E11] mx-auto rounded-2xl p-2 w-50 mt-8"
+              disabled={loading}
             >
-              บันทึก
+              {loading ? 'กำลังบันทึก...' : 'บันทึก'}
             </button>
           </div>
-
         </form>
       </div>
-
     </>
   )
 }
