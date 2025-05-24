@@ -23,27 +23,33 @@ const LoginPage = () => {
     e.preventDefault();
     setError('');
 
+    const requestBody = {
+      email: formData.email,
+      password: formData.password
+    };
+
+    console.log('Sending login request with:', { ...requestBody, password: '***' });
+
     try {
-      const response = await fetch('http://localhost:8080/login', {
+      const response = await fetch('http://localhost:8080/api/users/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password
-        }),
+        credentials: 'include',
+        body: JSON.stringify(requestBody),
       });
 
       const data = await response.json();
+      console.log('Login response:', { status: response.status, data });
 
       if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+        throw new Error(data.error || 'Login failed');
       }
 
       // Store tokens
       localStorage.setItem('token', data.token);
-      localStorage.setItem('refreshToken', data.refreshToken);
+      localStorage.setItem('refreshToken', data.refresh_token);
 
       // Dispatch login event
       window.dispatchEvent(new Event('login'));
@@ -51,7 +57,8 @@ const LoginPage = () => {
       // Redirect to home page
       router.push('/dashboard');
     } catch (err) {
-      setError(err.message);
+      console.error('Login error:', err);
+      setError(err.message || 'An error occurred during login');
     }
   };
 

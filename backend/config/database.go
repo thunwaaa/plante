@@ -9,6 +9,12 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
+var db *mongo.Database
+
+func SetDatabase(database *mongo.Database) {
+	db = database
+}
+
 func ConnectDB() *mongo.Client {
 	log.Println("Attempting to connect to MongoDB...")
 	clientOptions := options.Client().ApplyURI("mongodb+srv://thunk:Glidgd5324@mai.keo9rgi.mongodb.net/")
@@ -34,9 +40,5 @@ func ConnectDB() *mongo.Client {
 var Client *mongo.Client = ConnectDB()
 
 func OpenCollection(collectionName string) *mongo.Collection {
-
-	if Client == nil {
-		log.Fatal("MongoDB client is not initialized. Please call ConnectDB first.")
-	}
-	return Client.Database("usersdb").Collection(collectionName)
+	return db.Collection(collectionName)
 }

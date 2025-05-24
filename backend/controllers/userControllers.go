@@ -5,18 +5,26 @@ import (
 	"authentication/helpers"
 	"authentication/models"
 	"context"
+	"io/ioutil"
+	"log"
 	"net/http"
 	"time"
+
+	"bytes"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-playground/validator/v10"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
 )
 
 var validate = validator.New()
+var userCollection *mongo.Collection
 
-var userCollection = config.OpenCollection("users")
+func InitUserCollection() {
+	userCollection = config.OpenCollection("users")
+}
 
 func Signup() gin.HandlerFunc {
 	return func(c *gin.Context) {
@@ -81,9 +89,25 @@ func Login() gin.HandlerFunc {
 		var user models.User
 		var foundUser models.User
 
+		// Log the raw request body
+		body, _ := c.GetRawData()
+		log.Printf("Login request body: %s", string(body))
+		c.Request.Body = ioutil.NopCloser(bytes.NewBuffer(body))
+
 		// Get user input
 		if err := c.BindJSON(&user); err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			log.Printf("BindJSON error: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request format: " + err.Error()})
+			return
+		}
+
+		// Log the parsed user data
+		log.Printf("Parsed user data - Email: %v, Password length: %d", user.Email, len(*user.Password))
+
+		// Validate required fields
+		if user.Email == nil || user.Password == nil {
+			log.Printf("Missing required fields - Email: %v, Password: %v", user.Email, user.Password)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Email and password are required"})
 			return
 		}
 

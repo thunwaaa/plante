@@ -2,6 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
+import { plantApi } from '@/lib/api'
 import {
   Dialog,
   DialogContent,
@@ -12,37 +13,75 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog"
 import { Button } from '@/components/ui/button'
+import { format } from 'date-fns'
 
 const page = () => {
   const router = useRouter()
-  const [treeDataList, setTreeDataList] = useState([]);
+  const [plants, setPlants] = useState([]);
   const [openDialog, setOpenDialog] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    const stored = JSON.parse(localStorage.getItem('treeDataList') || '[]');
-    setTreeDataList(stored);
+    fetchPlants();
   }, []);
+
+  const fetchPlants = async () => {
+    try {
+      setLoading(true);
+      const data = await plantApi.getPlants();
+      setPlants(Array.isArray(data) ? data : []);
+      setError(null);
+    } catch (err) {
+      setError('Failed to load plants. Please try again later.');
+      console.error('Error fetching plants:', err);
+      setPlants([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const goToNewPage = () => {
     router.push('/dashboard/new')
   }
 
-  const handleDelete = (indexToDelete) => {
-    const newList = treeDataList.filter((_, i) => i !== indexToDelete)
-    setTreeDataList(newList)
-    localStorage.setItem('treeDataList', JSON.stringify(newList))
+  const handleDelete = async (plantId) => {
+    try {
+      await plantApi.deletePlant(plantId);
+      setPlants(plants.filter(plant => plant._id !== plantId));
+      setOpenDialog(null);
+    } catch (err) {
+      setError('Failed to delete plant. Please try again.');
+      console.error('Error deleting plant:', err);
+    }
   }
 
-  const handleEdit = (index) => {
-    localStorage.setItem('editTreeIndex', index.toString())
-    router.push(`/dashboard/edit/${index}`)
+  const handleEdit = (plantId) => {
+    router.push(`/dashboard/edit/${plantId}`)
+  }
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-screen">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#373E11]"></div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-screen">
+        <p className="text-red-600 mb-4">{error}</p>
+        <Button onClick={fetchPlants}>Try Again</Button>
+      </div>
+    );
   }
 
   return (
     <>
       <h1 className='max-sm:text-3xl md:text-4xl lg:text-5xl font-extrabold flex justify-center mt-12'>ต้นไม้ของคุณ</h1>
 
-      { treeDataList.length === 0 ? (
+      { plants.length === 0 ? (
         <div className="flex justify-center mt-8">
           <button
             onClick={goToNewPage}
@@ -52,7 +91,6 @@ const page = () => {
           </button>
         </div>
       ) : (
-        // ถ้ามีข้อมูลต้นไม้ → แสดงการ์ดและปุ่มเพิ่มต่อท้าย
         <div className="flex flex-wrap justify-center gap-6 mt-8 mx-3">
           {openDialog !== null && (
             <Dialog open={true} onOpenChange={() => setOpenDialog(null)}>
@@ -66,10 +104,7 @@ const page = () => {
                   </Button>
                   <Button
                     className="bg-red-600 text-white"
-                    onClick={() => {
-                      handleDelete(openDialog)
-                      setOpenDialog(null)
-                    }}
+                    onClick={() => handleDelete(openDialog)}
                   >
                     ลบ
                   </Button>
@@ -77,34 +112,34 @@ const page = () => {
               </DialogContent>
             </Dialog>
           )}
-          {treeDataList.map((tree, index) => (
-            <div key={index} className="p-4 border rounded-xl w-64 shadow-md bg-[#E6E4BB] relative">
+          {plants.map((plant) => (
+            <div key={plant._id} className="p-4 border rounded-xl w-64 shadow-md bg-[#E6E4BB] relative">
               <div className="h-40 w-full shadow-sm rounded-md overflow-hidden mb-2 flex justify-center items-center">
-                {tree.image && (
+                {plant.image_url && (
                   <img
-                    src={tree.image}
-                    alt={tree.name}
+                    src={plant.image_url}
+                    alt={plant.name}
                     className="w-full h-40 object-cover rounded-md mb-2"
                   />
                 )}
               </div>
-              <h2 className="text-xl font-bold">{tree.name}</h2>
-              <p>ประเภท: {tree.type}</p>
-              <p>ความสูง: {tree.plantHeight}</p>
-              <p>วันที่ปลูก: {new Date(tree.date).toLocaleDateString()}</p>
+              <h2 className="text-xl font-bold">{plant.name}</h2>
+              <p>ประเภท: {plant.type}</p>
+              <p>ความสูง: {plant.plant_height}</p>
+              <p>วันที่ปลูก: {format(new Date(plant.plant_date), 'dd/MM/yyyy')}</p>
+              <p>ภาชนะ: {plant.container}</p>
 
               <div className="flex justify-end mt-4 gap-2">
-                <button onClick={() => handleEdit(index)} className=" hover:text-blue-800 mr-4">
+                <button onClick={() => handleEdit(plant._id)} className="hover:text-blue-800 mr-4">
                   <Pencil size={20} />
                 </button>
-                <button onClick={() => setOpenDialog(index)} className=" hover:text-red-800">
+                <button onClick={() => setOpenDialog(plant._id)} className="hover:text-red-800">
                   <Trash2 size={20} />
                 </button>
               </div>
             </div>
           ))}
 
-          {/* ปุ่มเพิ่มต้นไม้เล็กต่อท้าย */}
           <button
             onClick={goToNewPage}
             className="p-4 border rounded-xl w-64 h-[350px] shadow-md flex flex-col justify-center items-center bg-[#E6E4BB] hover:scale-105 transition"

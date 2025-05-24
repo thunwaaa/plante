@@ -31,11 +31,12 @@ const SignupPage = () => {
     }
 
     try {
-      const response = await fetch('http://localhost:8080/signup', {
+      const response = await fetch('http://localhost:8080/api/users/signup', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include',
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
@@ -44,20 +45,21 @@ const SignupPage = () => {
       });
 
       const data = await response.json();
+      console.log('Signup response:', { status: response.status, data });
 
       if (!response.ok) {
-        throw new Error(data.message || 'Signup failed');
+        throw new Error(data.error || 'Signup failed');
       }
 
       // Store tokens
       localStorage.setItem('token', data.token);
-      localStorage.setItem('refreshToken', data.refreshToken);
+      localStorage.setItem('refreshToken', data.refresh_token);
 
       // Dispatch login event
       window.dispatchEvent(new Event('login'));
 
       // Redirect to home page
-      router.push('/dashboard');
+      router.push('/login');
     } catch (err) {
       setError(err.message);
     }
