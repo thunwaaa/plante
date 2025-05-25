@@ -2,9 +2,20 @@ const API_URL = 'http://localhost:8080/api';
 
 // Helper function to get auth token
 const getAuthToken = () => {
-  const token = localStorage.getItem('token');
-  console.log('Retrieved token:', token ? 'Token exists' : 'No token found');
-  return token;
+  try {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      // If no token, redirect to login
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+      throw new Error('No authentication token found');
+    }
+    return token;
+  } catch (error) {
+    console.error('Error getting auth token:', error);
+    throw error;
+  }
 };
 
 // Helper function to upload an image
@@ -52,7 +63,8 @@ const uploadImage = async (file) => {
 
     const data = await response.json();
     console.log('Upload successful:', data);
-    return data.image_url;
+    // Ensure the image URL is properly formatted
+    return data.image_url.startsWith('/') ? data.image_url : `/${data.image_url}`;
   } catch (error) {
     console.error('Image upload error:', error);
     throw error;
@@ -61,50 +73,43 @@ const uploadImage = async (file) => {
 
 // Helper function for API calls
 const apiCall = async (endpoint, method = 'GET', data = null) => {
-  const headers = {
-    'Content-Type': 'application/json',
-  };
-
-  const token = getAuthToken();
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-    console.log('Making authenticated request to:', `${API_URL}${endpoint}`);
-  } else {
-    console.log('Making unauthenticated request to:', `${API_URL}${endpoint}`);
-  }
-
-  const options = {
-    method,
-    headers,
-    credentials: 'include',
-  };
-
-  if (data) {
-    options.body = JSON.stringify(data);
-  }
-
   try {
-    console.log('Request options:', {
+    const token = getAuthToken();
+    const headers = {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    };
+
+    const options = {
       method,
-      headers: { ...headers, Authorization: headers.Authorization ? 'Bearer [REDACTED]' : undefined },
-      endpoint: `${API_URL}${endpoint}`
-    });
+      headers,
+      credentials: 'include',
+    };
+
+    if (data) {
+      options.body = JSON.stringify(data);
+    }
 
     const response = await fetch(`${API_URL}${endpoint}`, options);
-    console.log('Response status:', response.status);
+
+    // Handle 401 Unauthorized
+    if (response.status === 401) {
+      // Clear invalid token
+      localStorage.removeItem('token');
+      // Redirect to login
+      if (typeof window !== 'undefined') {
+        window.location.href = '/login';
+      }
+      throw new Error('Session expired. Please login again.');
+    }
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      console.error('API error:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorData
-      });
       throw new Error(errorData.error || `API call failed: ${response.statusText}`);
     }
 
-    const data = await response.json();
-    return data;
+    const responseData = await response.json();
+    return responseData;
   } catch (error) {
     console.error('API call error:', error);
     throw error;
@@ -114,26 +119,50 @@ const apiCall = async (endpoint, method = 'GET', data = null) => {
 // Plant API calls
 export const plantApi = {
   // Get all plants for the current user
-  getPlants: () => apiCall('/plants/dashboard'),
+  getPlants: async () => {
+    try {
+      const data = await apiCall('/plants/dashboard');
+      return Array.isArray(data) ? data : [];
+    } catch (error) {
+      console.error('Error getting plants:', error);
+      throw error;
+    }
+  },
 
   // Get a specific plant
-  getPlant: (plantId) => apiCall(`/plants/${plantId}`),
+  getPlant: async (plantId) => {
+    try {
+      const data = await apiCall(`/plants/${plantId}`);
+      return data;
+    } catch (error) {
+      console.error('Error getting plant:', error);
+      throw error;
+    }
+  },
 
   // Create a new plant
-  createPlant: (plantData) => apiCall('/plants/new', 'POST', plantData),
+  createPlant: async (plantData) => {
+    try {
+      const response = await apiCall('/plants/new', 'POST', plantData);
+      return response;
+    } catch (error) {
+      console.error('Error creating plant:', error);
+      throw error;
+    }
+  },
 
   // Update a plant
   updatePlant: async (plantId, plantData, imageFile = null) => {
     try {
       let finalPlantData = { ...plantData };
       
-      // If there's a new image file, upload it first
       if (imageFile) {
         const imageUrl = await uploadImage(imageFile);
         finalPlantData.image_url = imageUrl;
       }
 
-      return await apiCall(`/plants/edit/${plantId}`, 'PUT', finalPlantData);
+      const response = await apiCall(`/plants/edit/${plantId}`, 'PUT', finalPlantData);
+      return response;
     } catch (error) {
       console.error('Error updating plant:', error);
       throw error;
@@ -141,5 +170,57 @@ export const plantApi = {
   },
 
   // Delete a plant
-  deletePlant: (plantId) => apiCall(`/plants/${plantId}`, 'DELETE'),
-}; 
+  deletePlant: async (plantId) => {
+    try {
+      const response = await apiCall(`/plants/${plantId}`, 'DELETE');
+      return response;
+    } catch (error) {
+      console.error('Error deleting plant:', error);
+      throw error;
+    }
+  },
+
+  // Upload image
+  uploadImage: async (file) => {
+    if (!file) {
+      throw new Error('No file provided for upload');
+    }
+
+    try {
+      const token = getAuthToken();
+      const formData = new FormData();
+      formData.append('image', file);
+
+      const response = await fetch(`${API_URL}/plants/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+        credentials: 'include',
+      });
+
+      if (response.status === 401) {
+        localStorage.removeItem('token');
+        if (typeof window !== 'undefined') {
+          window.location.href = '/login';
+        }
+        throw new Error('Session expired. Please login again.');
+      }
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || `Upload failed: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      return data.image_url.startsWith('/') ? data.image_url : `/${data.image_url}`;
+    } catch (error) {
+      console.error('Image upload error:', error);
+      throw error;
+    }
+  }
+};
+
+// Export API_URL for use in components
+export { API_URL }; 

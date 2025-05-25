@@ -2,7 +2,7 @@
 import React, { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { Plus, Pencil, Trash2 } from 'lucide-react'
-import { plantApi } from '@/lib/api'
+import { plantApi, API_URL } from '@/lib/api'
 import {
   Dialog,
   DialogContent,
@@ -22,17 +22,25 @@ const page = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    fetchPlants();
-  }, []);
-
-  const fetchPlants = async () => {
+  const refreshPlants = async () => {
     try {
       setLoading(true);
       const data = await plantApi.getPlants();
-      setPlants(Array.isArray(data) ? data : []);
+      if (Array.isArray(data)) {
+        const formattedPlants = data.map(plant => ({
+          ...plant,
+          image_url: plant.image_url?.startsWith('/') ? plant.image_url : `/${plant.image_url}`
+        }));
+        setPlants(formattedPlants);
+      } else {
+        setPlants([]);
+      }
       setError(null);
     } catch (err) {
+      if (err.message === 'Session expired. Please login again.') {
+        // Let the API handle the redirect
+        return;
+      }
       setError('Failed to load plants. Please try again later.');
       console.error('Error fetching plants:', err);
       setPlants([]);
@@ -40,6 +48,45 @@ const page = () => {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        router.push('/login');
+        return;
+      }
+      refreshPlants();
+    };
+
+    checkAuth();
+
+    const handleStorageChange = (e) => {
+      if (e.key === 'lastUpdatedPlant') {
+        refreshPlants();
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        refreshPlants();
+      }
+    };
+
+    const handlePlantUpdate = () => {
+      refreshPlants();
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('plantUpdated', handlePlantUpdate);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('plantUpdated', handlePlantUpdate);
+    };
+  }, [router]);
 
   const goToNewPage = () => {
     router.push('/dashboard/new')
@@ -72,7 +119,7 @@ const page = () => {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen">
         <p className="text-red-600 mb-4">{error}</p>
-        <Button onClick={fetchPlants}>Try Again</Button>
+        <Button onClick={refreshPlants}>Try Again</Button>
       </div>
     );
   }
@@ -117,15 +164,20 @@ const page = () => {
               <div className="h-40 w-full shadow-sm rounded-md overflow-hidden mb-2 flex justify-center items-center">
                 {plant.image_url && (
                   <img
-                    src={plant.image_url}
+                    src={`${API_URL.replace('/api', '')}${plant.image_url}`}
                     alt={plant.name}
                     className="w-full h-40 object-cover rounded-md mb-2"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = 'https://placehold.co/400x400?text=Plant+Image';
+                    }}
+                    key={`${plant._id}-${plant.image_url}`}
                   />
                 )}
               </div>
               <h2 className="text-xl font-bold">{plant.name}</h2>
               <p>ประเภท: {plant.type}</p>
-              <p>ความสูง: {plant.plant_height}</p>
+              <p>ความสูง: {plant.plant_height} cm</p>
               <p>วันที่ปลูก: {format(new Date(plant.plant_date), 'dd/MM/yyyy')}</p>
               <p>ภาชนะ: {plant.container}</p>
 
@@ -142,7 +194,7 @@ const page = () => {
 
           <button
             onClick={goToNewPage}
-            className="p-4 border rounded-xl w-64 h-[350px] shadow-md flex flex-col justify-center items-center bg-[#E6E4BB] hover:scale-105 transition"
+            className="p-4 border rounded-xl w-64 h-96 shadow-md flex flex-col justify-center items-center bg-[#E6E4BB] hover:scale-105 transition"
           >
             <Plus className="w-12 h-12 opacity-55" />
             <span className="mt-2 font-semibold">เพิ่มต้นไม้</span>
