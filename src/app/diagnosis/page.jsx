@@ -29,9 +29,25 @@ const page = () => {
         <div className='flex flex-wrap justify-center max-w-4xl gap-4 mt-4 w-full'>
             <div className='w-64 lg:w-[calc(50%-1rem)]'>
                 <p className='font-bold mb-2'>ชนิดต้นไม้</p>
-                <input 
-                    type="text" placeholder='ชนิดต้นไม้' 
-                    className='border rounded-2xl p-1.5 w-full font-bold'/>
+                <Select onChange={(e) => setType(e.target.value)} required>
+                    <SelectTrigger className="w-full rounded-2xl border border-black">
+                        <SelectValue placeholder="เลือกชนิดต้นไม้" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectGroup>
+                            <SelectItem value="ไม้ดอก">ไม้ดอก</SelectItem>
+                            <SelectItem value="ไม้ใบ">ไม้ใบ</SelectItem>
+                            <SelectItem value="ไม้ผล">ไม้ผล</SelectItem>
+                            <SelectItem value="สมุนไพร">สมุนไพร</SelectItem>
+                            <SelectItem value="ผักสวนครัว">ผักสวนครัว</SelectItem>
+                            <SelectItem value="กระบองเพชร">กระบองเพชร</SelectItem>
+                            <SelectItem value="ไม้อวบน้ำ">ไม้อวบน้ำ</SelectItem>
+                            <SelectItem value="ไม้เลื้อย">ไม้เลื้อย</SelectItem>
+                            <SelectItem value="ไม้พุ่ม">ไม้พุ่ม</SelectItem>
+                            <SelectItem value="ไม้ยืนต้น">ไม้ยืนต้น</SelectItem>
+                        </SelectGroup>
+                    </SelectContent>
+                </Select>
             </div>
 
             <div className='w-64 lg:w-[calc(50%-1rem)]'>
@@ -51,14 +67,18 @@ const page = () => {
                 <p className='mb-2 font-bold'>ส่วนที่มีปัญหา</p>
                 <Select onChange={(e) => setType(e.target.value)} required>
                     <SelectTrigger className="w-full rounded-2xl border border-black">
-                    <SelectValue placeholder="เลือกพื้นที่" />
+                    <SelectValue placeholder="เลือกส่วนที่มีปัญหา" />
                     </SelectTrigger>
                     <SelectContent>
                     <SelectGroup>
-                        <SelectItem value="ไม้ผล">ไม้ผล</SelectItem>
-                        <SelectItem value="ไม้ดอก">ไม้ดอก</SelectItem>
-                        <SelectItem value="ไม้ประดับ">ไม้ประดับ</SelectItem>
-                        <SelectItem value="สมุนไพร">สมุนไพร</SelectItem>
+                        <SelectItem value="ใบ">ใบ</SelectItem>
+                        <SelectItem value="ลำต้น">ลำต้น</SelectItem>
+                        <SelectItem value="ราก">ราก</SelectItem>
+                        <SelectItem value="ดอก">ดอก</SelectItem>
+                        <SelectItem value="ผล">ผล</SelectItem>
+                        <SelectItem value="ยอดอ่อน">ยอดอ่อน</SelectItem>
+                        <SelectItem value="กิ่งก้าน">กิ่งก้าน</SelectItem>
+                        <SelectItem value="ทั้งต้น">ทั้งต้น</SelectItem>
                     </SelectGroup>
                     </SelectContent>
                 </Select>
@@ -124,10 +144,11 @@ const page = () => {
                             </SelectTrigger>
                             <SelectContent>
                             <SelectGroup>
-                                <SelectItem value="ทุกวัน">ทุกวัน</SelectItem>
-                                <SelectItem value="ทุก 2 วัน">ทุก 2 วัน</SelectItem>
-                                <SelectItem value="ทุก 3 วัน">ทุก 3 วัน</SelectItem>
-                                <SelectItem value="ทุกสัปดาห์">ทุกสัปดาห์</SelectItem>
+                                <SelectItem value="รดน้ำทุกวัน">รดน้ำทุกวัน</SelectItem>
+                                <SelectItem value="รดน้ำวันเว้นวัน">รดน้ำวันเว้นวัน</SelectItem>
+                                <SelectItem value="รดน้ำ 2-3 ครั้งต่อสัปดาห์">รดน้ำ 2-3 ครั้งต่อสัปดาห์</SelectItem>
+                                <SelectItem value="รดน้ำสัปดาห์ละครั้ง">รดน้ำสัปดาห์ละครั้ง</SelectItem>
+                                <SelectItem value="รดน้ำเมื่อดินแห้ง">รดน้ำเมื่อดินแห้ง</SelectItem>
                             </SelectGroup>
                             </SelectContent>
                         </Select>
@@ -142,10 +163,10 @@ const page = () => {
                             </SelectTrigger>
                             <SelectContent>
                             <SelectGroup>
-                                <SelectItem value="เต็มวัน">เต็มวัน</SelectItem>
-                                <SelectItem value="ครึ่งวัน">ครึ่งวัน</SelectItem>
-                                <SelectItem value="น้อยกว่า 3 ชั่วโมง">น้อยกว่า 3 ชั่วโมง</SelectItem>
-                                <SelectItem value="ไม่ต้องการแสงแดด">ไม่ต้องการแสงแดด</SelectItem>
+                                <SelectItem value="แสงแดดจัด">แสงแดดจัด (6-8 ชั่วโมงต่อวัน)</SelectItem>
+                                <SelectItem value="แสงแดดปานกลาง">แสงแดดปานกลาง (4-6 ชั่วโมงต่อวัน)</SelectItem>
+                                <SelectItem value="แสงแดดรำไร">แสงแดดรำไร (2-4 ชั่วโมงต่อวัน)</SelectItem>
+                                <SelectItem value="แสงแดดน้อย">แสงแดดน้อย (น้อยกว่า 2 ชั่วโมงต่อวัน)</SelectItem>
                             </SelectGroup>
                             </SelectContent>
                         </Select>  
@@ -169,23 +190,6 @@ const page = () => {
                         </Select>
                     </div>
 
-                    {/* สำหรับใส่ปุ๋ยครั้งล่าสุด */}
-                    <div className='mx-auto w-full max-w-62 lg:max-w-[calc(100%-1rem)] md:max-w-[calc(67%-1rem)] md:ml-2'>
-                        <p className='font-bold mb-2'>ใส่ปุ๋ยครั้งล่าสุด</p>
-                        <Select onChange={(e) => setType(e.target.value)} required>
-                            <SelectTrigger className="w-full rounded-2xl border border-black">
-                            <SelectValue placeholder="เลือกวันที่" />
-                            </SelectTrigger>
-                            <SelectContent>
-                            <SelectGroup>
-                                <SelectItem value="วันนี้">วันนี้</SelectItem>
-                                <SelectItem value="เมื่อวาน">เมื่อวาน</SelectItem>
-                                <SelectItem value="เมื่อ 3 วันก่อน">เมื่อ 3 วันก่อน</SelectItem>
-                                <SelectItem value="เมื่อ 1 สัปดาห์ก่อน">เมื่อ 1 สัปดาห์ก่อน</SelectItem>
-                            </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                    </div>
                 </div>
             </div>
         </div>

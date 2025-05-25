@@ -2,14 +2,16 @@
 import React, { useState, useEffect } from 'react'
 import { useRouter, useParams } from 'next/navigation'
 import { Plus, Calendar, TrendingUp, X, Camera } from 'lucide-react'
-import { treeService } from '@/app/services/treeService'
+import { plantApi } from '@/lib/api'
+import { API_URL } from '@/lib/api'
 
-const page = () => {
+const DiaryDetailPage = () => {
     const router = useRouter()
     const { id } = useParams()
-    const [treeData, setTreeData] = useState(null)
+    const [plant, setPlant] = useState(null)
     const [loading, setLoading] = useState(true)
     const [showGrowthForm, setShowGrowthForm] = useState(false)
+    const [showEditForm, setShowEditForm] = useState(false)
     const [error, setError] = useState(null)
 
     const [newGrowth, setNewGrowth] = useState({
@@ -19,39 +21,42 @@ const page = () => {
         date: new Date().toISOString().split('T')[0]
     });
 
-    const [editedTree, setEditedTree] = useState({
+    const [editedPlant, setEditedPlant] = useState({
         name: '',
         type: '',
-        plantHeight: '',
+        plant_height: '',
         container: '',
-        date: '',
-        image: null
+        plant_date: '',
+        image_url: null
     })
 
-    const handleImageUpload = (e) => {
+    const handleImageUpload = async (e) => {
         const file = e.target.files[0]
         if (file) {
-            const reader = new FileReader()
-            reader.onload = (e) => {
-                setEditedTree({...editedTree, image: e.target.result})
+            try {
+                const imageUrl = await plantApi.uploadImage(file)
+                setEditedPlant({...editedPlant, image_url: imageUrl})
+            } catch (err) {
+                setError('ไม่สามารถอัพโหลดรูปภาพได้')
+                console.error('Error uploading image:', err)
             }
-            reader.readAsDataURL(file)
         }
     }
 
-    const handleUpdateTree = async () => {
+    const handleUpdatePlant = async () => {
         try {
-            await treeService.updateTree(id, {
-                ...editedTree,
-                plantHeight: parseFloat(editedTree.plantHeight),
-                plantingDate: new Date(editedTree.date)
+            const updatedPlant = await plantApi.updatePlant(id, {
+                ...editedPlant,
+                plant_height: parseFloat(editedPlant.plant_height),
+                plant_date: new Date(editedPlant.plant_date).toISOString()
             });
             
-            // Refresh tree data
-            fetchTreeData();
+            // Refresh plant data
+            fetchPlantData();
             setShowEditForm(false);
         } catch (error) {
-            setError(error.message);
+            setError('ไม่สามารถอัพเดทข้อมูลต้นไม้ได้');
+            console.error('Error updating plant:', error);
         }
     }
 
@@ -59,17 +64,11 @@ const page = () => {
         try {
             if (!newGrowth.height) return;
 
-            const recordData = {
-                height: parseFloat(newGrowth.height),
-                mood: newGrowth.mood,
-                notes: newGrowth.notes,
-                date: new Date(newGrowth.date)
-            };
-
-            await treeService.addGrowthRecord(id, recordData);
+            // TODO: Implement growth record API endpoint
+            // For now, we'll just show an error
+            setError('ฟีเจอร์บันทึกการเติบโตกำลังอยู่ในระหว่างการพัฒนา');
             
-            // Refresh tree data
-            fetchTreeData();
+            // Reset form
             setNewGrowth({ 
                 height: '', 
                 mood: 'ปานกลาง', 
@@ -78,7 +77,8 @@ const page = () => {
             });
             setShowGrowthForm(false);
         } catch (error) {
-            setError(error.message);
+            setError('ไม่สามารถบันทึกข้อมูลการเติบโตได้');
+            console.error('Error adding growth record:', error);
         }
     }
 
@@ -108,40 +108,65 @@ const page = () => {
         return current.height - previous.height;
     }
 
-    const fetchTreeData = async () => {
+    const fetchPlantData = async () => {
         try {
             setLoading(true);
-            const data = await treeService.getTree(id);
-            setTreeData(data);
-            setEditedTree({
+            const data = await plantApi.getPlant(id);
+            setPlant(data);
+            setEditedPlant({
                 name: data.name || '',
                 type: data.type || '',
-                plantHeight: data.plantHeight || '',
+                plant_height: data.plant_height?.toString() || '',
                 container: data.container || '',
-                date: data.plantingDate ? new Date(data.plantingDate).toISOString().split('T')[0] : '',
-                image: data.image || null
+                plant_date: data.plant_date ? new Date(data.plant_date).toISOString().split('T')[0] : '',
+                image_url: data.image_url || null
             });
         } catch (error) {
-            setError(error.message);
+            setError('ไม่สามารถโหลดข้อมูลต้นไม้ได้');
+            console.error('Error fetching plant:', error);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchTreeData();
+        fetchPlantData();
     }, [id]);
 
     if (loading) {
-        return <p className="text-center mt-8">กำลังโหลดข้อมูล...</p>
+        return (
+            <div className="flex justify-center items-center min-h-screen">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#373E11]"></div>
+            </div>
+        )
     }
 
     if (error) {
-        return <p className="text-center mt-8 text-red-600">เกิดข้อผิดพลาด: {error}</p>
+        return (
+            <div className="text-red-600 text-center mt-8">
+                {error}
+                <button 
+                    onClick={() => router.push('/diary')}
+                    className="block mx-auto mt-4 border bg-[#373E11] text-[#E6E4BB] p-2 rounded-lg"
+                >
+                    กลับไปหน้ารายการ
+                </button>
+            </div>
+        )
     }
 
-    if (!treeData) {
-        return <p className="text-center mt-8">ไม่พบข้อมูลต้นไม้</p>
+    if (!plant) {
+        return (
+            <div className="text-center mt-8">
+                ไม่พบข้อมูลต้นไม้
+                <button 
+                    onClick={() => router.push('/diary')}
+                    className="block mx-auto mt-4 border bg-[#373E11] text-[#E6E4BB] p-2 rounded-lg"
+                >
+                    กลับไปหน้ารายการ
+                </button>
+            </div>
+        )
     }
 
     return (
@@ -157,25 +182,23 @@ const page = () => {
                     </button>
                 </div>
                 
-                {/* Tree info card */}
+                {/* Plant info card */}
                 <div className="bg-[#E6E4BB] rounded-lg shadow-lg p-6 border border-[#373E11]">
                     <div className="flex justify-between items-start mb-4">
-                        <h2 className="font-bold text-2xl text-[#373E11]">{treeData.name}</h2>
-                        <button 
-                            onClick={() => setShowEditForm(true)}
-                            className="text-[#373E11] hover:text-[#4a5216] transition-colors"
-                        >
-                            แก้ไขข้อมูล
-                        </button>
+                        <h2 className="font-bold text-2xl text-[#373E11]">{plant.name}</h2>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div className="space-y-4">
-                            {treeData.image ? (
+                            {plant.image_url ? (
                                 <img 
-                                    src={treeData.image} 
-                                    alt={treeData.name}
+                                    src={`${API_URL.replace('/api', '')}${plant.image_url}`}
+                                    alt={plant.name}
                                     className="w-full h-48 object-cover rounded-lg border border-[#373E11]"
+                                    onError={(e) => {
+                                        e.target.onerror = null;
+                                        e.target.src = 'https://placehold.co/400x400?text=Plant+Image';
+                                    }}
                                 />
                             ) : (
                                 <div className="w-full h-48 bg-gray-100 rounded-lg border border-[#373E11] flex items-center justify-center">
@@ -185,11 +208,11 @@ const page = () => {
                         </div>
                         
                         <div className="space-y-4">
-                            <p><strong className="text-[#373E11]">ประเภทพืช:</strong> {treeData.type}</p>
-                            <p><strong className="text-[#373E11]">ความสูงปัจจุบัน:</strong> {treeData.plantHeight} cm</p>
-                            <p><strong className="text-[#373E11]">ภาชนะที่ใช้ปลูก:</strong> {treeData.container}</p>
-                            {treeData.plantingDate && (
-                                <p><strong className="text-[#373E11]">วันที่ปลูก:</strong> {formatDate(treeData.plantingDate)}</p>
+                            <p><strong className="text-[#373E11]">ประเภทพืช:</strong> {plant.type}</p>
+                            <p><strong className="text-[#373E11]">ความสูงปัจจุบัน:</strong> {plant.plant_height} cm</p>
+                            <p><strong className="text-[#373E11]">ภาชนะที่ใช้ปลูก:</strong> {plant.container}</p>
+                            {plant.plant_date && (
+                                <p><strong className="text-[#373E11]">วันที่ปลูก:</strong> {formatDate(plant.plant_date)}</p>
                             )}
                         </div>
                     </div>
@@ -208,130 +231,13 @@ const page = () => {
                 {/* Growth Records Timeline */}
                 <div className="mt-6 bg-[#E6E4BB] rounded-lg shadow-lg p-6 border border-[#373E11]">
                     <h3 className="font-bold text-xl mb-4">บันทึกการเจริญเติบโต</h3>
-                    
-                    {treeData.growthRecords && treeData.growthRecords.length > 0 ? (
-                        <div className="space-y-4">
-                            {treeData.growthRecords.map((record, index) => (
-                                <div key={record._id} className="rounded-lg p-4 border border-[#373E11] relative">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <div className="font-medium text-[#373E11]">{formatDate(record.date)}</div>
-                                        <span className={`px-3 py-1 rounded-full text-sm font-medium ${getMoodColor(record.mood)}`}>
-                                            {record.mood}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center gap-2 mb-2">
-                                        <div className="text-lg font-bold text-[#373E11]">ความสูง: {record.height} cm</div>
-                                        {getGrowthTrend(treeData.growthRecords, index) !== 0 && (
-                                            <div className="flex items-center gap-1 text-sm">
-                                                <TrendingUp size={16} className={getGrowthTrend(treeData.growthRecords, index) > 0 ? 'text-green-600' : 'text-red-600'} />
-                                                <span className={getGrowthTrend(treeData.growthRecords, index) > 0 ? 'text-green-600' : 'text-red-600'}>
-                                                    {getGrowthTrend(treeData.growthRecords, index) > 0 ? '+' : ''}{getGrowthTrend(treeData.growthRecords, index).toFixed(1)} cm
-                                                </span>
-                                            </div>
-                                        )}
-                                    </div>
-                                    {record.notes && (
-                                        <div className="text-gray-600 text-sm mt-2">{record.notes}</div>
-                                    )}
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-center text-gray-600">ยังไม่มีบันทึกการเติบโต</p>
-                    )}
+                    <p className="text-center text-gray-600">ฟีเจอร์บันทึกการเติบโตกำลังอยู่ในระหว่างการพัฒนา</p>
                 </div>
-
-                {/* Edit Tree Modal */}
-                {showEditForm && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                        <div className="bg-[#E6E4BB] rounded-xl p-6 w-full max-w-md border border-[#373E11]">
-                            <div className="flex justify-between items-center mb-4">
-                                <h2 className="text-xl font-bold text-[#373E11]">แก้ไขข้อมูลต้นไม้</h2>
-                                <button onClick={() => setShowEditForm(false)}>
-                                    <X size={24} className="text-[#373E11]" />
-                                </button>
-                            </div>
-                            
-                            <div className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-medium mb-1 text-[#373E11]">ชื่อต้นไม้</label>
-                                    <input
-                                        type="text"
-                                        value={editedTree.name}
-                                        onChange={(e) => setEditedTree({...editedTree, name: e.target.value})}
-                                        className="w-full border border-[#373E11] rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#373E11] focus:border-transparent"
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium mb-1 text-[#373E11]">ประเภทต้นไม้</label>
-                                    <input
-                                        type="text"
-                                        value={editedTree.type}
-                                        onChange={(e) => setEditedTree({...editedTree, type: e.target.value})}
-                                        className="w-full border border-[#373E11] rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#373E11] focus:border-transparent"
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium mb-1 text-[#373E11]">ความสูง (cm)</label>
-                                    <input
-                                        type="number"
-                                        step="0.1"
-                                        value={editedTree.plantHeight}
-                                        onChange={(e) => setEditedTree({...editedTree, plantHeight: e.target.value})}
-                                        className="w-full border border-[#373E11] rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#373E11] focus:border-transparent"
-                                        required
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium mb-1 text-[#373E11]">ภาชนะที่ใช้ปลูก</label>
-                                    <input
-                                        type="text"
-                                        value={editedTree.container}
-                                        onChange={(e) => setEditedTree({...editedTree, container: e.target.value})}
-                                        className="w-full border border-[#373E11] rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#373E11] focus:border-transparent"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium mb-1 text-[#373E11]">วันที่ปลูก</label>
-                                    <input
-                                        type="date"
-                                        value={editedTree.date}
-                                        onChange={(e) => setEditedTree({...editedTree, date: e.target.value})}
-                                        className="w-full border border-[#373E11] rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#373E11] focus:border-transparent"
-                                    />
-                                </div>
-
-                                <div>
-                                    <label className="block text-sm font-medium mb-1 text-[#373E11]">รูปภาพ</label>
-                                    <input
-                                        type="file"
-                                        accept="image/*"
-                                        onChange={handleImageUpload}
-                                        className="w-full border border-[#373E11] rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#373E11] focus:border-transparent"
-                                    />
-                                </div>
-
-                                <button
-                                    onClick={handleUpdateTree}
-                                    className="w-full bg-[#373E11] hover:bg-[#4a5216] text-[#E6E4BB] py-2 px-4 rounded-lg transition-colors"
-                                >
-                                    บันทึกการแก้ไข
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                )}
 
                 {/* Growth Record Modal */}
                 {showGrowthForm && (
-                    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                        <div className="bg-[#E6E4BB] rounded-xl p-6 w-full max-w-md border border-[#373E11]">
+                    <div className="fixed inset-0 bg-black/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+                        <div className="bg-[#E6E4BB] rounded-xl p-6 w-full max-w-md border border-[#373E11] shadow-lg">
                             <div className="flex justify-between items-center mb-4">
                                 <h2 className="text-xl font-bold text-[#373E11]">บันทึกการเติบโต</h2>
                                 <button onClick={() => setShowGrowthForm(false)}>
@@ -340,8 +246,8 @@ const page = () => {
                             </div>
                             
                             <div className="mb-4 p-3 rounded-lg border border-[#373E11]">
-                                <div className="font-medium text-[#373E11]">{treeData.name}</div>
-                                <div className="text-sm text-gray-600">ความสูงปัจจุบัน: {treeData.plantHeight} cm</div>
+                                <div className="font-medium text-[#373E11]">{plant.name}</div>
+                                <div className="text-sm text-gray-600">ความสูงปัจจุบัน: {plant.plant_height} cm</div>
                             </div>
 
                             <div className="space-y-4">
@@ -408,4 +314,4 @@ const page = () => {
     )
 }
 
-export default page
+export default DiaryDetailPage

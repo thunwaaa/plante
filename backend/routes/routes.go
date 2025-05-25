@@ -1,8 +1,8 @@
 package routes
 
 import (
-	"plante/backend/controllers"
-	"plante/backend/middleware"
+	"authentication/controllers"
+	"authentication/middleware"
 
 	"github.com/gin-gonic/gin"
 )
