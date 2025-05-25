@@ -31,6 +31,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover"
+import { API_URL } from '@/lib/api'
 
 const EditPlantPage = ({ params }) => {
   const resolvedParams = React.use(params);
@@ -58,12 +59,17 @@ const EditPlantPage = ({ params }) => {
     try {
       setLoading(true);
       const plant = await plantApi.getPlant(id);
-      setName(plant.name);
-      setType(plant.type);
-      setContainer(plant.container);
-      setPlantHeight(plant.plant_height.toString());
-      setDate(new Date(plant.plant_date));
-      setCurrentImage(plant.image_url);
+      if (!plant) {
+        throw new Error('Plant not found');
+      }
+      
+      // Ensure all data is properly set
+      setName(plant.name || '');
+      setType(plant.type || '');
+      setContainer(plant.container || '');
+      setPlantHeight(plant.plant_height ? plant.plant_height.toString() : '');
+      setDate(plant.plant_date ? new Date(plant.plant_date) : new Date());
+      setCurrentImage(plant.image_url || null);
       setImagePreview(null);
       setError(null);
     } catch (err) {
@@ -75,36 +81,48 @@ const EditPlantPage = ({ params }) => {
   };
 
   const handleSubmit = async (e) => {
-    e.preventDefault()
-    setSaving(true)
-    setError(null)
+    e.preventDefault();
+    setSaving(true);
+    setError(null);
 
     try {
-      const plantData = {
-        name,
-        type,
-        container,
-        plant_height: parseFloat(plantHeight),
-        plant_date: date.toISOString(),
+      // Validate required fields
+      if (!name || !type || !container || !plantHeight || !date) {
+        throw new Error('กรุณากรอกข้อมูลให้ครบถ้วน');
       }
 
-      // Pass the imageFile to updatePlant if a new image was selected
-      const updatedPlant = await plantApi.updatePlant(id, plantData, imageFile)
+      const plantData = {
+        name: name.trim(),
+        type: type.trim(),
+        container: container.trim(),
+        plant_height: parseFloat(plantHeight),
+        plant_date: date.toISOString(),
+        // Keep the existing image URL if no new image is uploaded
+        image_url: currentImage
+      };
+
+      // Only update image if a new one is uploaded
+      const updatedPlant = await plantApi.updatePlant(id, plantData, imageFile);
       
-      // Update the current image with the new URL from the server
-      if (updatedPlant.image_url) {
-        setCurrentImage(updatedPlant.image_url)
-        setImagePreview(null) // Clear the preview since we now have the server URL
+      if (!updatedPlant) {
+        throw new Error('Failed to update plant');
       }
+
+      // Store the updated plant data in localStorage
+      localStorage.setItem('lastUpdatedPlant', JSON.stringify(updatedPlant));
       
-      router.push('/dashboard')
+      // Trigger a custom event to notify about the update
+      window.dispatchEvent(new Event('plantUpdated'));
+      
+      // Navigate back to dashboard
+      router.push('/dashboard');
     } catch (err) {
-      setError('ไม่สามารถบันทึกข้อมูลต้นไม้ได้ กรุณาลองใหม่อีกครั้ง')
-      console.error('Error updating plant:', err)
+      setError(err.message || 'ไม่สามารถบันทึกข้อมูลต้นไม้ได้ กรุณาลองใหม่อีกครั้ง');
+      console.error('Error updating plant:', err);
     } finally {
-      setSaving(false)
+      setSaving(false);
     }
-  }   
+  };
 
   useEffect(() => {
     // Cleanup function to revoke any existing blob URLs
@@ -162,8 +180,8 @@ const EditPlantPage = ({ params }) => {
                 alt="Preview" 
                 className="w-32 h-32 object-cover rounded-md mt-2"
                 onError={(e) => {
-                  e.target.onerror = null
-                  e.target.src = 'https://placehold.co/400x400?text=Plant+Image'
+                  e.target.onerror = null;
+                  e.target.src = 'https://placehold.co/400x400?text=Plant+Image';
                 }}
               />
             )}

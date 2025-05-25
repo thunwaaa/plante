@@ -49,22 +49,40 @@ const page = () => {
     setError(null)
 
     try {
+      let imageUrl = '';
+      
+      // Upload image first if exists
+      if (imageFile) {
+        try {
+          imageUrl = await plantApi.uploadImage(imageFile);
+        } catch (uploadErr) {
+          console.error('Error uploading image:', uploadErr);
+          setError('ไม่สามารถอัพโหลดรูปภาพได้ กรุณาลองใหม่อีกครั้ง');
+          setLoading(false);
+          return;
+        }
+      }
+
       const plantData = {
         name,
         type,
         container,
         plant_height: parseFloat(plantHeight),
         plant_date: date.toISOString(),
-        image_url: imageFile ? URL.createObjectURL(imageFile) : 'https://placehold.co/400x400?text=Plant+Image'
+        image_url: imageUrl || 'https://placehold.co/400x400?text=Plant+Image'
       }
 
-      await plantApi.createPlant(plantData)
-      router.push('/dashboard')
+      const newPlant = await plantApi.createPlant(plantData);
+      
+      // Store the new plant data in localStorage to trigger refresh
+      localStorage.setItem('lastUpdatedPlant', JSON.stringify(newPlant));
+      
+      router.push('/dashboard');
     } catch (err) {
-      setError('ไม่สามารถบันทึกข้อมูลต้นไม้ได้ กรุณาลองใหม่อีกครั้ง')
-      console.error('Error creating plant:', err)
+      setError('ไม่สามารถบันทึกข้อมูลต้นไม้ได้ กรุณาลองใหม่อีกครั้ง');
+      console.error('Error creating plant:', err);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
   }   
 

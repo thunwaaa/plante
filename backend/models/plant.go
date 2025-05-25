@@ -8,13 +8,20 @@ import (
 
 type Plant struct {
 	ID          primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
-	UserID      primitive.ObjectID `bson:"user_id" json:"user_id" validate:"required"`
-	Name        string             `json:"name" validate:"required"`
-	Type        string             `json:"type" validate:"required"`
-	Container   string             `json:"container" validate:"required"`
-	PlantHeight float64            `json:"plant_height" validate:"required"`
-	PlantDate   time.Time          `json:"plant_date" validate:"required"`
-	ImageURL    string             `json:"image_url,omitempty"`
-	CreatedAt   time.Time          `json:"created_at"`
-	UpdatedAt   time.Time          `json:"updated_at"`
+	UserID      primitive.ObjectID `bson:"user_id" json:"user_id"`
+	Name        string             `bson:"name" json:"name"`
+	Type        string             `bson:"type" json:"type"`
+	Container   string             `bson:"container" json:"container"`
+	PlantHeight float64            `bson:"plant_height" json:"plant_height"`
+	PlantDate   time.Time          `bson:"plant_date" json:"plant_date"`
+	ImageURL    string             `bson:"image_url" json:"image_url"`
+	CreatedAt   time.Time          `bson:"created_at" json:"created_at"`
+	UpdatedAt   time.Time          `bson:"updated_at" json:"updated_at"`
+
+	// Legacy fields (will be removed after migration)
+	Plantheight float64   `bson:"plantheight,omitempty" json:"plantheight,omitempty"`
+	Plantdate   time.Time `bson:"plantdate,omitempty" json:"plantdate,omitempty"`
+	Imageurl    string    `bson:"imageurl,omitempty" json:"imageurl,omitempty"`
+	Createdat   time.Time `bson:"createdat,omitempty" json:"createdat,omitempty"`
+	Updatedat   time.Time `bson:"updatedat,omitempty" json:"updatedat,omitempty"`
 }
