@@ -27,11 +27,7 @@ const page = () => {
       setLoading(true);
       const data = await plantApi.getPlants();
       if (Array.isArray(data)) {
-        const formattedPlants = data.map(plant => ({
-          ...plant,
-          image_url: plant.image_url?.startsWith('/') ? plant.image_url : `/${plant.image_url}`
-        }));
-        setPlants(formattedPlants);
+        setPlants(data);
       } else {
         setPlants([]);
       }
@@ -164,7 +160,7 @@ const page = () => {
               <div className="h-40 w-full shadow-sm rounded-md overflow-hidden mb-2 flex justify-center items-center">
                 {plant.image_url && (
                   <img
-                    src={`${API_URL.replace('/api', '')}${plant.image_url}`}
+                    src={plant.image_url}
                     alt={plant.name}
                     className="w-full h-40 object-cover rounded-md mb-2"
                     onError={(e) => {

@@ -90,6 +90,13 @@ func main() {
 
 	// Setup routes
 	routes.SetupRoutes(router)
+
+	// Initialize Cloudinary
+	if err := config.InitCloudinary(); err != nil {
+		log.Fatal("Failed to initialize Cloudinary:", err)
+	}
+
+	// Setup plant routes
 	routes.PlantRoutes(router)
 
 	// Start server

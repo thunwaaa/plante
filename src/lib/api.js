@@ -63,8 +63,8 @@ const uploadImage = async (file) => {
 
     const data = await response.json();
     console.log('Upload successful:', data);
-    // Ensure the image URL is properly formatted
-    return data.image_url.startsWith('/') ? data.image_url : `/${data.image_url}`;
+    // Return the image URL directly from Cloudinary
+    return data.image_url;
   } catch (error) {
     console.error('Image upload error:', error);
     throw error;
@@ -143,8 +143,31 @@ export const plantApi = {
   // Create a new plant
   createPlant: async (plantData) => {
     try {
-      const response = await apiCall('/plants/new', 'POST', plantData);
-      return response;
+      // Upload image first if exists
+      let imageUrl = plantData.image_url;
+      if (plantData.imageFile) {
+        imageUrl = await uploadImage(plantData.imageFile);
+      }
+
+      // Create plant with image URL
+      const response = await fetch(`${API_URL}/plants/new`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${getAuthToken()}`,
+        },
+        body: JSON.stringify({
+          ...plantData,
+          image_url: imageUrl,
+        }),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to create plant');
+      }
+
+      return await response.json();
     } catch (error) {
       console.error('Error creating plant:', error);
       throw error;
@@ -152,17 +175,21 @@ export const plantApi = {
   },
 
   // Update a plant
-  updatePlant: async (plantId, plantData, imageFile = null) => {
+  updatePlant: async (plantId, plantData, imageFile) => {
     try {
-      let finalPlantData = { ...plantData };
-      
+      // Upload new image if exists
+      let imageUrl = plantData.image_url;
       if (imageFile) {
-        const imageUrl = await uploadImage(imageFile);
-        finalPlantData.image_url = imageUrl;
+        imageUrl = await uploadImage(imageFile);
       }
 
-      const response = await apiCall(`/plants/edit/${plantId}`, 'PUT', finalPlantData);
-      return response;
+      // Update plant with new image URL using apiCall helper
+      const data = await apiCall(`/plants/edit/${plantId}`, 'PUT', {
+        ...plantData,
+        image_url: imageUrl,
+      });
+
+      return data;
     } catch (error) {
       console.error('Error updating plant:', error);
       throw error;
@@ -214,9 +241,43 @@ export const plantApi = {
       }
 
       const data = await response.json();
-      return data.image_url.startsWith('/') ? data.image_url : `/${data.image_url}`;
+      // Return the image URL directly from Cloudinary
+      return data.image_url;
     } catch (error) {
       console.error('Image upload error:', error);
+      throw error;
+    }
+  },
+
+  // Add a growth record to a plant
+  addGrowthRecord: async (plantId, growthData) => {
+    try {
+      const data = await apiCall(`/plants/${plantId}/growth`, 'POST', growthData);
+      return data;
+    } catch (error) {
+      console.error('Error adding growth record:', error);
+      throw error;
+    }
+  },
+
+  // Update a growth record
+  updateGrowthRecord: async (plantId, recordId, growthData) => {
+    try {
+      const data = await apiCall(`/plants/${plantId}/growth/${recordId}`, 'PUT', growthData);
+      return data;
+    } catch (error) {
+      console.error('Error updating growth record:', error);
+      throw error;
+    }
+  },
+
+  // Delete a growth record
+  deleteGrowthRecord: async (plantId, recordId) => {
+    try {
+      const data = await apiCall(`/plants/${plantId}/growth/${recordId}`, 'DELETE');
+      return data;
+    } catch (error) {
+      console.error('Error deleting growth record:', error);
       throw error;
     }
   }

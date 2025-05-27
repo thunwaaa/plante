@@ -12,9 +12,12 @@ func PlantRoutes(router *gin.Engine) {
 	plantGroup.Use(middleware.Authenticate())
 
 	// More specific routes first
-	plantGroup.POST("/upload", controllers.UploadImage())
+	plantGroup.POST("/upload", controllers.UploadPlantImage())
 	plantGroup.POST("/new", controllers.CreatePlant())
 	plantGroup.PUT("/edit/:plant_id", controllers.UpdatePlant())
+	plantGroup.POST("/:plant_id/growth", controllers.AddGrowthRecord())
+	plantGroup.PUT("/:plant_id/growth/:record_id", controllers.UpdateGrowthRecord())
+	plantGroup.DELETE("/:plant_id/growth/:record_id", controllers.DeleteGrowthRecord())
 
 	// More general routes last
 	plantGroup.GET("/dashboard", controllers.GetUserPlants())

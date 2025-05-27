@@ -89,9 +89,9 @@ export function NavBar() {
             <NavigationMenu>
               <NavigationMenuList className="flex gap-4">
                 <NavigationMenuItem>
-                  <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "text-xl")}>
-                    <Link href="/" passHref>Home</Link>
-                  </NavigationMenuLink>
+                  <Link href="/" className={cn(navigationMenuTriggerStyle(), "text-xl")}>
+                    Home
+                  </Link>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
                   <NavigationMenuTrigger className="text-xl">Services</NavigationMenuTrigger>
@@ -104,9 +104,9 @@ export function NavBar() {
                   </NavigationMenuContent>
                 </NavigationMenuItem>
                 <NavigationMenuItem>
-                  <NavigationMenuLink className={cn(navigationMenuTriggerStyle(), "text-xl")}>
-                    <Link href='/' passHref>About</Link>         
-                  </NavigationMenuLink>
+                  <Link href='/' className={cn(navigationMenuTriggerStyle(), "text-xl")}>
+                    About
+                  </Link>         
                 </NavigationMenuItem>
               </NavigationMenuList>
             </NavigationMenu>
@@ -218,21 +218,19 @@ export function NavBar() {
 
 export default NavBar;
 
-const ListItem = React.forwardRef(({ className, title, ...props }, ref) => {
+const ListItem = React.forwardRef(({ className, title, href, ...props }, ref) => {
   return (
     <li>
-      <NavigationMenuLink asChild>
-        <Link
-          href={ref}
-          className={cn(
-            "select-none space-y-1 rounded-md p-4 leading-none no-underline outline-none transition-colors min-h-[60px] flex items-center justify-center text-[18px] text-center font-normal hover:bg-[#373E11] hover:text-white",
-            className
-          )}
-          {...props}
-        >
-          {title}
-        </Link>
-      </NavigationMenuLink>
+      <Link
+        href={href}
+        className={cn(
+          "select-none space-y-1 rounded-md p-4 leading-none no-underline outline-none transition-colors min-h-[60px] flex items-center justify-center text-[18px] text-center font-normal hover:bg-[#373E11] hover:text-white",
+          className
+        )}
+        {...props}
+      >
+        {title}
+      </Link>
     </li>
   );
 });

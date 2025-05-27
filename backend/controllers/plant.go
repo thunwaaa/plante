@@ -4,6 +4,7 @@ import (
 	"authentication/config"
 	"authentication/models"
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -317,6 +318,33 @@ func UpdatePlant() gin.HandlerFunc {
 	}
 }
 
+func UploadPlantImage() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		file, err := c.FormFile("image")
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "No image file provided"})
+			return
+		}
+
+		// Open the file
+		src, err := file.Open()
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to open image file"})
+			return
+		}
+		defer src.Close()
+
+		// Upload to Cloudinary
+		imageURL, err := config.UploadImage(src, "plante/plants")
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to upload image"})
+			return
+		}
+
+		c.JSON(http.StatusOK, gin.H{"image_url": imageURL})
+	}
+}
+
 func DeletePlant() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -329,7 +357,7 @@ func DeletePlant() gin.HandlerFunc {
 			return
 		}
 
-		// Verify ownership
+		// Get plant data first to get image URL
 		var plant models.Plant
 		err = plantCollection.FindOne(ctx, bson.M{"_id": objID}).Decode(&plant)
 		if err != nil {
@@ -337,12 +365,25 @@ func DeletePlant() gin.HandlerFunc {
 			return
 		}
 
+		// Verify ownership
 		userID, exists := c.Get("user_id")
 		if !exists || plant.UserID.Hex() != userID.(string) {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized access"})
 			return
 		}
 
+		// Delete image from Cloudinary if exists
+		if plant.ImageURL != "" {
+			publicID := config.GetPublicIDFromURL(plant.ImageURL)
+			if publicID != "" {
+				if err := config.DeleteImage(publicID); err != nil {
+					// Log error but continue with plant deletion
+					fmt.Printf("Failed to delete image from Cloudinary: %v\n", err)
+				}
+			}
+		}
+
+		// Delete plant from database
 		_, err = plantCollection.DeleteOne(ctx, bson.M{"_id": objID})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -350,5 +391,258 @@ func DeletePlant() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"message": "Plant deleted successfully"})
+	}
+}
+
+func AddGrowthRecord() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		plantID := c.Param("plant_id")
+		objID, err := primitive.ObjectIDFromHex(plantID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid plant ID"})
+			return
+		}
+
+		// Get existing plant data first
+		var plant models.Plant
+		err = plantCollection.FindOne(ctx, bson.M{"_id": objID}).Decode(&plant)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Plant not found"})
+			return
+		}
+
+		// Verify ownership
+		userID, exists := c.Get("user_id")
+		if !exists || plant.UserID.Hex() != userID.(string) {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized access"})
+			return
+		}
+
+		// Parse new growth record data
+		var newRecord models.GrowthRecord
+		if err := c.BindJSON(&newRecord); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Generate a new ObjectID for the growth record
+		newRecord.ID = primitive.NewObjectID()
+		newRecord.CreatedAt = time.Now()
+
+		// Calculate new height
+		plant.PlantHeight += newRecord.Height
+
+		// Add new record to the beginning of the slice (for reverse chronological order display)
+		plant.GrowthRecords = append([]models.GrowthRecord{newRecord}, plant.GrowthRecords...)
+
+		// Prepare update fields
+		update := bson.M{
+			"$set": bson.M{
+				"plant_height":   plant.PlantHeight,
+				"growth_records": plant.GrowthRecords,
+				"updated_at":     time.Now(),
+			},
+		}
+
+		// Perform update
+		_, err = plantCollection.UpdateOne(ctx, bson.M{"_id": objID}, update)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Get updated plant data to return
+		var updatedPlant models.Plant
+		err = plantCollection.FindOne(ctx, bson.M{"_id": objID}).Decode(&updatedPlant)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch updated plant"})
+			return
+		}
+
+		c.JSON(http.StatusOK, updatedPlant)
+	}
+}
+
+func UpdateGrowthRecord() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		plantID := c.Param("plant_id")
+		recordID := c.Param("record_id")
+
+		plantObjID, err := primitive.ObjectIDFromHex(plantID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid plant ID"})
+			return
+		}
+
+		recordObjID, err := primitive.ObjectIDFromHex(recordID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid record ID"})
+			return
+		}
+
+		// Get existing plant data first
+		var plant models.Plant
+		err = plantCollection.FindOne(ctx, bson.M{"_id": plantObjID}).Decode(&plant)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Plant not found"})
+			return
+		}
+
+		// Verify ownership
+		userID, exists := c.Get("user_id")
+		if !exists || plant.UserID.Hex() != userID.(string) {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized access"})
+			return
+		}
+
+		// Parse update data
+		var updateData models.GrowthRecord
+		if err := c.BindJSON(&updateData); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Find the record index
+		recordIndex := -1
+		for i, record := range plant.GrowthRecords {
+			if record.ID == recordObjID {
+				recordIndex = i
+				break
+			}
+		}
+
+		if recordIndex == -1 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Growth record not found"})
+			return
+		}
+
+		// Calculate height difference
+		heightDiff := updateData.Height - plant.GrowthRecords[recordIndex].Height
+
+		// Update the record
+		plant.GrowthRecords[recordIndex].Height = updateData.Height
+		plant.GrowthRecords[recordIndex].Mood = updateData.Mood
+		plant.GrowthRecords[recordIndex].Notes = updateData.Notes
+		plant.GrowthRecords[recordIndex].Date = updateData.Date
+
+		// Update plant height
+		plant.PlantHeight += heightDiff
+
+		// Prepare update fields
+		update := bson.M{
+			"$set": bson.M{
+				"plant_height":   plant.PlantHeight,
+				"growth_records": plant.GrowthRecords,
+				"updated_at":     time.Now(),
+			},
+		}
+
+		// Perform update
+		_, err = plantCollection.UpdateOne(ctx, bson.M{"_id": plantObjID}, update)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Get updated plant data
+		var updatedPlant models.Plant
+		err = plantCollection.FindOne(ctx, bson.M{"_id": plantObjID}).Decode(&updatedPlant)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch updated plant"})
+			return
+		}
+
+		c.JSON(http.StatusOK, updatedPlant)
+	}
+}
+
+func DeleteGrowthRecord() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+
+		plantID := c.Param("plant_id")
+		recordID := c.Param("record_id")
+
+		plantObjID, err := primitive.ObjectIDFromHex(plantID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid plant ID"})
+			return
+		}
+
+		recordObjID, err := primitive.ObjectIDFromHex(recordID)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid record ID"})
+			return
+		}
+
+		// Get existing plant data first
+		var plant models.Plant
+		err = plantCollection.FindOne(ctx, bson.M{"_id": plantObjID}).Decode(&plant)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Plant not found"})
+			return
+		}
+
+		// Verify ownership
+		userID, exists := c.Get("user_id")
+		if !exists || plant.UserID.Hex() != userID.(string) {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized access"})
+			return
+		}
+
+		// Find the record index and calculate height adjustment
+		recordIndex := -1
+		var heightAdjustment float64
+		for i, record := range plant.GrowthRecords {
+			if record.ID == recordObjID {
+				recordIndex = i
+				heightAdjustment = -record.Height // Subtract the height of the deleted record
+				break
+			}
+		}
+
+		if recordIndex == -1 {
+			c.JSON(http.StatusNotFound, gin.H{"error": "Growth record not found"})
+			return
+		}
+
+		// Remove the record
+		plant.GrowthRecords = append(plant.GrowthRecords[:recordIndex], plant.GrowthRecords[recordIndex+1:]...)
+
+		// Update plant height
+		plant.PlantHeight += heightAdjustment
+
+		// Prepare update fields
+		update := bson.M{
+			"$set": bson.M{
+				"plant_height":   plant.PlantHeight,
+				"growth_records": plant.GrowthRecords,
+				"updated_at":     time.Now(),
+			},
+		}
+
+		// Perform update
+		_, err = plantCollection.UpdateOne(ctx, bson.M{"_id": plantObjID}, update)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+			return
+		}
+
+		// Get updated plant data
+		var updatedPlant models.Plant
+		err = plantCollection.FindOne(ctx, bson.M{"_id": plantObjID}).Decode(&updatedPlant)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch updated plant"})
+			return
+		}
+
+		c.JSON(http.StatusOK, updatedPlant)
 	}
 }
