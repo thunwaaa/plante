@@ -63,8 +63,8 @@ const uploadImage = async (file) => {
 
     const data = await response.json();
     console.log('Upload successful:', data);
-    // Ensure the image URL is properly formatted
-    return data.image_url.startsWith('/') ? data.image_url : `/${data.image_url}`;
+    // Return the image URL directly from Cloudinary
+    return data.image_url;
   } catch (error) {
     console.error('Image upload error:', error);
     throw error;
@@ -150,7 +150,7 @@ export const plantApi = {
       }
 
       // Create plant with image URL
-      const response = await fetch(`${API_URL}/plants`, {
+      const response = await fetch(`${API_URL}/plants/new`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -241,9 +241,43 @@ export const plantApi = {
       }
 
       const data = await response.json();
-      return data.image_url.startsWith('/') ? data.image_url : `/${data.image_url}`;
+      // Return the image URL directly from Cloudinary
+      return data.image_url;
     } catch (error) {
       console.error('Image upload error:', error);
+      throw error;
+    }
+  },
+
+  // Add a growth record to a plant
+  addGrowthRecord: async (plantId, growthData) => {
+    try {
+      const data = await apiCall(`/plants/${plantId}/growth`, 'POST', growthData);
+      return data;
+    } catch (error) {
+      console.error('Error adding growth record:', error);
+      throw error;
+    }
+  },
+
+  // Update a growth record
+  updateGrowthRecord: async (plantId, recordId, growthData) => {
+    try {
+      const data = await apiCall(`/plants/${plantId}/growth/${recordId}`, 'PUT', growthData);
+      return data;
+    } catch (error) {
+      console.error('Error updating growth record:', error);
+      throw error;
+    }
+  },
+
+  // Delete a growth record
+  deleteGrowthRecord: async (plantId, recordId) => {
+    try {
+      const data = await apiCall(`/plants/${plantId}/growth/${recordId}`, 'DELETE');
+      return data;
+    } catch (error) {
+      console.error('Error deleting growth record:', error);
       throw error;
     }
   }

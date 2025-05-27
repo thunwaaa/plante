@@ -57,7 +57,7 @@ const DiaryPage = () => {
                         <div className="h-40 w-full bg-white rounded-md overflow-hidden mb-2 flex justify-center items-center">
                             {plant.image_url ? (
                                 <img
-                                    src={`${API_URL.replace('/api', '')}${plant.image_url}`}
+                                    src={plant.image_url}
                                     alt={plant.name}
                                     className="w-full h-40 object-cover rounded-md mb-2"
                                     onError={(e) => {
