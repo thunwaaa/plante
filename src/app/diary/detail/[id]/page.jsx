@@ -181,8 +181,10 @@ const DiaryDetailPage = () => {
 
     const fetchPlantData = async () => {
         try {
+            console.log('Fetching plant data for ID:', id);
             setLoading(true);
             const data = await plantApi.getPlant(id);
+            console.log('Received plant data:', data);
             setPlant(data);
             setEditedPlant({
                 name: data.name || '',
@@ -192,21 +194,22 @@ const DiaryDetailPage = () => {
                 plant_date: data.plant_date ? new Date(data.plant_date).toISOString().split('T')[0] : '',
                 image_url: data.image_url || null
             });
+            console.log('Plant data updated in state:', data);
         } catch (error) {
-            setError('ไม่สามารถโหลดข้อมูลต้นไม้ได้');
             console.error('Error fetching plant:', error);
+            setError('ไม่สามารถโหลดข้อมูลต้นไม้ได้');
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
+        console.log('Component mounted, fetching plant data for ID:', id);
         fetchPlantData();
 
         const handlePlantUpdated = () => {
             console.log('Plant updated event received, refetching data...');
-            // Add a small delay to ensure navigation is complete and state is stable
-            setTimeout(fetchPlantData, 100);
+            fetchPlantData();
         };
 
         const handleVisibilityChange = () => {
@@ -216,14 +219,21 @@ const DiaryDetailPage = () => {
             }
         };
 
+        // Add event listener for page focus
+        const handleFocus = () => {
+            console.log('Page focused, refetching data...');
+            fetchPlantData();
+        };
+
         window.addEventListener('plantUpdated', handlePlantUpdated);
         document.addEventListener('visibilitychange', handleVisibilityChange);
+        window.addEventListener('focus', handleFocus);
 
         return () => {
             window.removeEventListener('plantUpdated', handlePlantUpdated);
             document.removeEventListener('visibilitychange', handleVisibilityChange);
+            window.removeEventListener('focus', handleFocus);
         };
-
     }, [id]); // Depend on id to re-run effect when id changes
 
     if (loading) {

@@ -58,6 +58,20 @@ func main() {
 	config.SetDatabase(db)
 	controllers.InitUserCollection()
 	controllers.InitPlantCollection()
+	controllers.InitRecommendationCollection()
+
+	// Import plant data from JSON
+	if err := helpers.ImportPlantData(client); err != nil {
+		log.Printf("Error importing plant data: %v", err)
+	}
+
+	// Initialize controllers
+	diagnosisController := controllers.NewDiagnosisController(db)
+
+	// Initialize diagnosis data
+	if err := diagnosisController.InitializeDiagnosisData(); err != nil {
+		log.Printf("Warning: Failed to initialize diagnosis data: %v", err)
+	}
 
 	// Initialize router
 	router := gin.Default()
@@ -65,9 +79,9 @@ func main() {
 	// Configure CORS
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000"},
-		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Accept", "Authorization", "X-Requested-With"},
-		ExposeHeaders:    []string{"Content-Length", "Authorization"},
+		ExposeHeaders:    []string{"Content-Length"},
 		AllowCredentials: true,
 		MaxAge:           12 * time.Hour,
 	}))
@@ -89,15 +103,16 @@ func main() {
 	}))
 
 	// Setup routes
+	apiGroup := router.Group("/api")
 	routes.SetupRoutes(router)
+	routes.PlantRoutes(router)
+	routes.SetupRecommendationRoutes(apiGroup, db)
+	routes.SetupDiagnosisRoutes(router, diagnosisController)
 
 	// Initialize Cloudinary
 	if err := config.InitCloudinary(); err != nil {
 		log.Fatal("Failed to initialize Cloudinary:", err)
 	}
-
-	// Setup plant routes
-	routes.PlantRoutes(router)
 
 	// Start server
 	port := os.Getenv("PORT")

@@ -103,16 +103,17 @@ func GetUserPlants() gin.HandlerFunc {
 		for i, plant := range plants {
 			// Use the most recent data
 			cleanedPlant := models.Plant{
-				ID:          plant.ID,
-				UserID:      plant.UserID,
-				Name:        plant.Name,
-				Type:        plant.Type,
-				Container:   plant.Container,
-				PlantHeight: plant.PlantHeight, // Use new field
-				PlantDate:   plant.PlantDate,   // Use new field
-				ImageURL:    plant.ImageURL,    // Use new field
-				CreatedAt:   plant.CreatedAt,
-				UpdatedAt:   plant.UpdatedAt,
+				ID:            plant.ID,
+				UserID:        plant.UserID,
+				Name:          plant.Name,
+				Type:          plant.Type,
+				Container:     plant.Container,
+				PlantHeight:   plant.PlantHeight, // Use new field
+				PlantDate:     plant.PlantDate,   // Use new field
+				ImageURL:      plant.ImageURL,    // Use new field
+				CreatedAt:     plant.CreatedAt,
+				UpdatedAt:     plant.UpdatedAt,
+				GrowthRecords: plant.GrowthRecords,
 			}
 
 			// If new fields are empty but old fields exist, use old fields
@@ -186,16 +187,17 @@ func GetPlant() gin.HandlerFunc {
 
 		// Clean up plant data
 		cleanedPlant := models.Plant{
-			ID:          plant.ID,
-			UserID:      plant.UserID,
-			Name:        plant.Name,
-			Type:        plant.Type,
-			Container:   plant.Container,
-			PlantHeight: plant.PlantHeight,
-			PlantDate:   plant.PlantDate,
-			ImageURL:    plant.ImageURL,
-			CreatedAt:   plant.CreatedAt,
-			UpdatedAt:   plant.UpdatedAt,
+			ID:            plant.ID,
+			UserID:        plant.UserID,
+			Name:          plant.Name,
+			Type:          plant.Type,
+			Container:     plant.Container,
+			PlantHeight:   plant.PlantHeight,
+			PlantDate:     plant.PlantDate,
+			ImageURL:      plant.ImageURL,
+			CreatedAt:     plant.CreatedAt,
+			UpdatedAt:     plant.UpdatedAt,
+			GrowthRecords: plant.GrowthRecords,
 		}
 
 		// If new fields are empty but old fields exist, use old fields
