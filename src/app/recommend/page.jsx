@@ -11,16 +11,69 @@ import {
     SelectValue,
   } from "@/components/ui/select"
 
+import { useRouter } from 'next/navigation';
+
 const page = () => {
+  const [area, setArea] = useState('');
+  const [light, setLight] = useState('');
+  const [size, setSize] = useState('');
+  const [water, setWater] = useState('');
+  const [purpose, setPurpose] = useState('');
+  const [experience, setExperience] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
+
+  const router = useRouter();
+
+  const handleRecommend = async (e) => {
+    e.preventDefault();
+    setLoading(true);
+    setError(null);
+
+    try {
+      // Build query parameters from selected values
+      const queryParams = new URLSearchParams();
+      if (area) queryParams.append('area', area);
+      if (light) queryParams.append('light', light);
+      if (size) queryParams.append('size', size);
+      if (water) queryParams.append('water', water);
+      if (purpose) queryParams.append('purpose', purpose);
+      if (experience) queryParams.append('experience', experience);
+
+      // Fetch recommendations from the API - use the backend URL
+      const response = await fetch(`http://localhost:8080/api/recommendations?${queryParams.toString()}`);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      const data = await response.json();
+
+      // Navigate to the results page with query parameters
+      router.push(`/recommend/results?${queryParams.toString()}`);
+
+    } catch (error) {
+      console.error('Error fetching recommendations:', error);
+      setError('เกิดข้อผิดพลาดในการค้นหาพืชที่เหมาะสม');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
     <>
-      <h1 className='text-3xl font-bold text-center m-3'>พืชที่เหมาะสมกับคุณ</h1>
+      <h1 className='text-3xl md:text-4xl font-bold text-center m-3 mt-8'>พืชที่เหมาะสมกับคุณ</h1>
       <p className='text-center'>ค้นหาต้นไม้ที่เหมาะสมกับสภาพแวดล้อมและไลฟ์สไตล์ของคุณ</p>
-      <form className='m-4 p-2 flex flex-col items-center w-full'>
+      
+      {error && (
+        <div className="text-center text-red-600 mt-4">
+          {error}
+        </div>
+      )}
+
+      <form onSubmit={handleRecommend} className='m-4 p-2 flex flex-col items-center w-full'>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-6xl mx-auto p-6 w-full">
             <div className="w-full px-4">
                 <p className="font-bold mb-2 text-lg">พื้นที่ปลูก</p>
-                <Select onChange={(e) => setType(e.target.value)} required>
+                <Select onValueChange={setArea} required>
                     <SelectTrigger className="w-full rounded-2xl border border-black h-12">
                     <SelectValue placeholder="เลือกพื้นที่" />
                     </SelectTrigger>
@@ -40,7 +93,7 @@ const page = () => {
 
             <div className="w-full px-4">
                 <p className="font-bold mb-2 text-lg">ปริมาณแสง</p>
-                <Select onChange={(e) => setType(e.target.value)} required>
+                <Select onValueChange={setLight} required>
                     <SelectTrigger className="w-full rounded-2xl border border-black h-12">
                     <SelectValue placeholder="เลือกปริมาณแสง" />
                     </SelectTrigger>
@@ -56,7 +109,7 @@ const page = () => {
 
             <div className="w-full px-4">
                 <p className="font-bold mb-2 text-lg">ขนาดต้นไม้</p>
-                <Select onChange={(e) => setType(e.target.value)} required>
+                <Select onValueChange={setSize} required>
                     <SelectTrigger className="w-full rounded-2xl border border-black h-12">
                     <SelectValue placeholder="เลือกขนาด" />
                     </SelectTrigger>
@@ -72,7 +125,7 @@ const page = () => {
 
             <div className="w-full px-4">
                 <p className="font-bold mb-2 text-lg">ความถี่การรดน้ำ</p>
-                <Select onChange={(e) => setType(e.target.value)} required>
+                <Select onValueChange={setWater} required>
                     <SelectTrigger className="w-full rounded-2xl border border-black h-12">
                     <SelectValue placeholder="เลือกความชื้น" />
                     </SelectTrigger>
@@ -88,7 +141,7 @@ const page = () => {
 
             <div className="w-full px-4">
                 <p className="font-bold mb-2 text-lg">วัตถุประสงค์ที่อยากปลูก</p>
-                <Select onChange={(e) => setType(e.target.value)} required>
+                <Select onValueChange={setPurpose} required>
                     <SelectTrigger className="w-full rounded-2xl border border-black h-12">
                     <SelectValue placeholder="วัตถุประสงค์" />
                     </SelectTrigger>
@@ -106,7 +159,7 @@ const page = () => {
 
             <div className="w-full px-4">
                 <p className="font-bold mb-2 text-lg">ประสบการณ์</p>
-                <Select onChange={(e) => setType(e.target.value)} required>
+                <Select onValueChange={setExperience} required>
                     <SelectTrigger className="w-full rounded-2xl border border-black h-12">
                     <SelectValue placeholder="ประสบการณ์การเลี้ยงต้นไม้" />
                     </SelectTrigger>
@@ -123,13 +176,14 @@ const page = () => {
 
         <button
             type="submit"
-            className="text-[#E6E4BB] bg-[#373E11] mx-auto rounded-2xl px-8 py-3 text-lg font-bold mt-8 hover:bg-[#454b28] transition-colors"
+            disabled={loading}
+            className={`text-[#E6E4BB] bg-[#373E11] mx-auto rounded-2xl px-8 py-3 text-lg font-bold mt-8 hover:bg-[#454b28] transition-colors ${
+              loading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
         >
-            ค้นหาพืชที่เหมาะสม
+            {loading ? 'กำลังค้นหา...' : 'ค้นหาพืชที่เหมาะสม'}
         </button>
-        </form>
-
-    
+      </form>
     </>
   )
 }

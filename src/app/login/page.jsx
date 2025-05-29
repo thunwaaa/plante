@@ -3,6 +3,7 @@
 import React, { useState } from 'react'
 import Link from "next/link";
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 const LoginPage = () => {
   const router = useRouter();
@@ -81,7 +82,7 @@ const LoginPage = () => {
         </div>
         {/* Right panel with sign-in form */}
         <div className='flex flex-col justify-center items-center self-center w-1/2'>
-          <h1 className="text-4xl font-bold mb-8 underline">Sign in</h1>
+          <h1 className="text-4xl font-bold mb-8 underline">Login</h1>
           {error && <p className="text-red-500 mb-4">{error}</p>}
           <form onSubmit={handleSubmit} className='flex flex-col text-2xl space-y-4 w-3/4 max-w-md'>
             <label htmlFor="email">Email</label>
@@ -111,40 +112,53 @@ const LoginPage = () => {
 
       {/* Mobile & Tablet Sign in - Shows only on screens below lg */}
       <div className='lg:hidden flex flex-col min-h-screen'>
-        {/* Mobile sign-in form */}
-        <a href="/" className='flex justify-center pt-12'>
-          <img src="/plantelogo.svg" alt="logo" className='w-56 top-0 inset-0' />
-        </a>
-        <div className='flex flex-col flex-grow justify-center items-center px-6 py-8 mt-[-96] md:mt-[-256]'>
-          <h1 className="text-4xl font-bold mb-12">Login</h1>
-          {error && <p className="text-red-500 mb-4">{error}</p>}
-          <form onSubmit={handleSubmit} className='flex flex-col w-full max-w-md space-y-4'>
-            <label htmlFor="email" className="text-xl">Email</label>
-            <input 
-              id='email'
-              type="email" 
-              required 
-              value={formData.email}
-              onChange={handleChange}
-              className='border border-[#373E11] rounded-lg h-12 p-2 text-lg'
-              placeholder='Enter your Email'
-            />
-            <label htmlFor="password" className="text-xl">Password</label>
-            <input 
-              id='password'
-              type="password"
-              required
-              value={formData.password}
-              onChange={handleChange}
-              placeholder='Enter your Password'
-              className='border border-[#373E11] rounded-lg h-12 p-2 text-lg' 
-            />
-            <button type="submit" className='bg-[#373E11] text-[#E6E4BB] p-3 mt-5 rounded-2xl hover:bg-[#454b28] text-xl'>LOGIN</button>
-          </form>
-          
-          {/* Mobile sign-up CTA */}
-          <div className='mt-10 pt-8 border-t border-[#373E11] w-full max-w-md text-center'>
-            <h2 className='text-xl mb-4'>Don't have an account? <Link href="/signup" className='underline text-blue-600'>Sign up</Link></h2>
+        <div className='flex flex-col items-center'>
+          {/* Logo container with fixed position */}
+          <div className='w-full flex justify-center pt-4 pb-4'>
+            <Link href="/">
+              <Image 
+                src="/plantelogo.svg" 
+                alt="logo" 
+                width={224} 
+                height={224}
+                className='w-56'
+                priority
+              />
+            </Link>
+          </div>
+
+          {/* Form container */}
+          <div className='flex flex-col items-center px-4 py-3 w-full'>
+            <h1 className="text-3xl font-bold mb-5 underline">Login</h1>
+            {error && <p className="text-red-500 mb-4">{error}</p>}
+            <form onSubmit={handleSubmit} className='flex flex-col w-full max-w-md space-y-3'>
+              <label htmlFor="email" className="text-xl">Email</label>
+              <input 
+                id='email'
+                type="email" 
+                required 
+                value={formData.email}
+                onChange={handleChange}
+                className='border border-[#373E11] rounded-lg h-12 p-2 text-lg'
+                placeholder='Enter your Email'
+              />
+              <label htmlFor="password" className="text-xl">Password</label>
+              <input 
+                id='password'
+                type="password"
+                required
+                value={formData.password}
+                onChange={handleChange}
+                placeholder='Enter your Password'
+                className='border border-[#373E11] rounded-lg h-12 p-2 text-lg' 
+              />
+              <button type="submit" className='bg-[#373E11] text-[#E6E4BB] p-3 mt-2 rounded-2xl hover:bg-[#454b28] text-xl'>LOGIN</button>
+            </form>
+            
+            {/* Sign-in CTA */}
+            <div className='mt-8 pt-8 border-t border-[#373E11] w-full max-w-md text-center'>
+              <h2 className='text-xl mb-4'>Don't have an account? <Link href="/signup" className='underline text-blue-600'>Sign up</Link></h2>
+            </div>
           </div>
         </div>
       </div>

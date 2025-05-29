@@ -162,7 +162,7 @@ const page = () => {
                   <img
                     src={plant.image_url}
                     alt={plant.name}
-                    className="w-full h-40 object-cover rounded-md mb-2"
+                    className="w-full h-40 object-cover rounded-md"
                     onError={(e) => {
                       e.target.onerror = null;
                       e.target.src = 'https://placehold.co/400x400?text=Plant+Image';

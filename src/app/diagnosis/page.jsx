@@ -1,207 +1,277 @@
 'use client'
-import React from 'react'
-import { BookText } from 'lucide-react';
-import { TriangleAlert } from 'lucide-react';
+import React, { useState } from 'react';
+import { TriangleAlert, Thermometer } from 'lucide-react';
 import {
-    Select,
-    SelectContent,
-    SelectGroup,
-    SelectItem,
-    SelectLabel,
-    SelectTrigger,
-    SelectValue,
-  } from "@/components/ui/select"
-  import { Thermometer } from 'lucide-react';
+  Select,
+  SelectContent,
+  SelectGroup,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
-const page = () => {
+const TreeDiagnosisForm = () => {
+  // State สำหรับเลือกได้ช้อยเดียว
+  const [problemPart, setProblemPart] = useState('');
+  const [wateringFrequency, setWateringFrequency] = useState('');
+  const [sunlight, setSunlight] = useState('');
+  const [soilType, setSoilType] = useState('');
+  const [temperature, setTemperature] = useState('');
+
+  // State สำหรับเลือกได้หลายช้อย
+  const [symptoms, setSymptoms] = useState([]);
+  const [materials, setMaterials] = useState([]);
+  const [fertilizers, setFertilizers] = useState([]);
+
+  const symptomOptions = [
+    { id: 'yellow', label: 'ใบเหลือง' },
+    { id: 'withered', label: 'ใบเหี่ยว' },
+    { id: 'brown', label: 'ใบมีจุดสีน้ำตาล' },
+    { id: 'fall', label: 'ใบร่วง' },
+    { id: 'rotten_stem', label: 'ลำต้นเน่า' },
+    { id: 'pest', label: 'มีแมลง' },
+    { id: 'flower_fall', label: 'ดอกร่วง' },
+    { id: 'not_bloom', label: 'ไม่ออกดอก' },
+    { id: 'root_rot', label: 'รากเน่า' }
+  ];
+
+  const materialOptions = [
+    'ดินร่วน', 'ดินเหนียว', 'กาบมะพร้าว', 'แกลบดำ',
+    'แกลบดิบ', 'ทรายหยาบ', 'พีทมอส', 'หินภูเขาไฟ'
+  ];
+
+  const fertilizerOptions = [
+    'ปุ๋ยเคมี', 'ปุ๋ยอินทรีย์', 'ปุ๋ยหมัก', 'น้ำหมักชีวภาพ', 'ไม่เคยใส่ปุ๋ย'
+  ];
+
+  const handleCheckboxChange = (e, setter, values) => {
+    const { value, checked } = e.target;
+    if (checked) {
+      setter([...values, value]);
+    } else {
+      setter(values.filter(item => item !== value));
+    }
+  };
+
+  const handleSubmit = async () => {
+    const formData = {
+      problemPart,
+      symptoms,
+      wateringFrequency,
+      sunlight,
+      soilType,
+      temperature,
+      materials,
+      fertilizers,
+    };
+
+    try {
+      const response = await fetch('http://localhost:8080/api/diagnosis/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to get diagnosis');
+      }
+
+      const data = await response.json();
+      
+      // Store the diagnosis data in sessionStorage
+      sessionStorage.setItem('diagnosisData', JSON.stringify({
+        ...data,
+        matchScore: data.matchScore || 0.8, // Add a default match score if not provided
+      }));
+
+      // Navigate to results page
+      window.location.href = '/diagnosis/results';
+    } catch (error) {
+      console.error('Error:', error);
+      alert('เกิดข้อผิดพลาดในการวิเคราะห์ กรุณาลองใหม่อีกครั้ง');
+    }
+  };
+
   return (
-    <>
-    <div className='flex flex-col justify-center text-center mt-8'>
-      <h1 className='text-3xl font-bold mb-3'>วิเคราะห์อาการต้นไม้</h1>
-      <p className='max-sm:w-72 mx-auto'>โปรดกรอกข้อมูล เพื่อนำไปวิเคราะห์ปัญหาและรับคำแนะนำในการแก้ไข</p>
-    </div>
-    <div className='flex flex-col justify-center items-center mt-8'>
-        <div className='flex items-center'>
-            <BookText size={28} absoluteStrokeWidth />
-            <h2 className='ml-2 font-extrabold underline text-lg'>ข้อมูลเบื้องต้น</h2>
-        </div>
+    <div className='flex flex-col justify-center items-center mt-10 px-6'>
+        <h1 className='text-3xl md:text-4xl font-bold mb-4 text-center'>วิเคราะห์อาการต้นไม้</h1>
+        <p className='text-center max-w-2xl mb-6 text-lg'>
+            โปรดกรอกข้อมูล เพื่อนำไปวิเคราะห์ปัญหาและรับคำแนะนำในการดูแลรักษาต้นไม้ของคุณ
+        </p>
 
-        <div className='flex flex-wrap justify-center max-w-4xl gap-4 mt-4 w-full'>
-            <div className='w-64 lg:w-[calc(50%-1rem)]'>
-                <p className='font-bold mb-2'>ชนิดต้นไม้</p>
-                <Select onChange={(e) => setType(e.target.value)} required>
+        {/* ส่วนฟอร์ม */}
+        <div className='w-full max-w-6xl px-6 rounded-xl '>
+
+            {/* อาการที่พบ */}
+            <section>
+            <div className='flex justify-center items-center mb-4'>
+                <TriangleAlert size={28} />
+                <h2 className='ml-3 font-extrabold underline text-xl'>อาการที่พบ</h2>
+            </div>
+
+            <div className='mb-6'>
+                <p className='font-semibold mb-2'>ส่วนที่มีปัญหา</p>
+                <Select onValueChange={setProblemPart}>
+                <SelectTrigger className="w-full rounded-xl border-black">
+                    <SelectValue placeholder="เลือกส่วนที่มีปัญหา" />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectGroup>
+                    {['ใบ','ลำต้น','ราก','ดอก','ผล','ยอดอ่อน','กิ่งก้าน','ทั้งต้น'].map(part => (
+                        <SelectItem key={part} value={part}>{part}</SelectItem>
+                    ))}
+                    </SelectGroup>
+                </SelectContent>
+                </Select>
+            </div>
+
+            <div>
+                <p className='font-semibold mb-2'>ลักษณะอาการ (เลือกได้หลายอย่าง)</p>
+                <div className='grid md:grid-cols-2 gap-3'>
+                {symptomOptions.map(symptom => (
+                    <label key={symptom.id} className='flex items-center'>
+                    <input
+                        type="checkbox"
+                        value={symptom.label}
+                        onChange={(e) => handleCheckboxChange(e, setSymptoms, symptoms)}
+                        className='mr-2'
+                    />
+                    {symptom.label}
+                    </label>
+                ))}
+                </div>
+            </div>
+            </section>
+
+            {/* สภาพแวดล้อม */}
+            <section>
+            <div className='flex justify-center items-center mb-7 mt-2'>
+                <Thermometer size={28} />
+                <h2 className='ml-3 font-extrabold underline text-xl'>สภาพแวดล้อม</h2>
+            </div>
+
+
+            <div className='grid md:grid-cols-2 gap-6'>
+                <div>
+                    <p className='font-semibold mb-2'>ความถี่การรดน้ำ</p>
+                    <Select onValueChange={setWateringFrequency}>
+                        <SelectTrigger className="w-full rounded-xl border border-black">
+                        <SelectValue placeholder="เลือกความถี่" />
+                        </SelectTrigger>
+                        <SelectContent>
+                        <SelectGroup>
+                            {['รดน้ำทุกวัน','รดน้ำวันเว้นวัน','2-3 ครั้งต่อสัปดาห์','สัปดาห์ละครั้ง','เมื่อดินแห้ง'].map(val => (
+                            <SelectItem key={val} value={val}>{val}</SelectItem>
+                            ))}
+                        </SelectGroup>
+                        </SelectContent>
+                    </Select>
+                </div>
+                <div>
+                    <p className='font-bold mb-2'>แสงแดดที่ได้รับ</p>
+                    <Select onValueChange={setSunlight}>
                     <SelectTrigger className="w-full rounded-2xl border border-black">
-                        <SelectValue placeholder="เลือกชนิดต้นไม้" />
+                        <SelectValue placeholder="เลือกแสงแดด" />
                     </SelectTrigger>
                     <SelectContent>
                         <SelectGroup>
-                            <SelectItem value="ไม้ดอก">ไม้ดอก</SelectItem>
-                            <SelectItem value="ไม้ใบ">ไม้ใบ</SelectItem>
-                            <SelectItem value="ไม้ผล">ไม้ผล</SelectItem>
-                            <SelectItem value="สมุนไพร">สมุนไพร</SelectItem>
-                            <SelectItem value="ผักสวนครัว">ผักสวนครัว</SelectItem>
-                            <SelectItem value="กระบองเพชร">กระบองเพชร</SelectItem>
-                            <SelectItem value="ไม้อวบน้ำ">ไม้อวบน้ำ</SelectItem>
-                            <SelectItem value="ไม้เลื้อย">ไม้เลื้อย</SelectItem>
-                            <SelectItem value="ไม้พุ่ม">ไม้พุ่ม</SelectItem>
-                            <SelectItem value="ไม้ยืนต้น">ไม้ยืนต้น</SelectItem>
+                        <SelectItem value="แดดจัด">แดดจัด (6-8 ชม.)</SelectItem>
+                        <SelectItem value="แดดปานกลาง">แดดปานกลาง (4-6 ชม.)</SelectItem>
+                        <SelectItem value="แดดรำไร">แดดรำไร (2-4 ชม.)</SelectItem>
+                        <SelectItem value="แดดน้อย">แดดน้อย (&lt; 2 ชม.)</SelectItem>
                         </SelectGroup>
                     </SelectContent>
-                </Select>
-            </div>
+                    </Select>
+                </div>
 
-            <div className='w-64 lg:w-[calc(50%-1rem)]'>
-                <p className='font-bold mb-2'>อายุต้นไม้</p>
-                <input 
-                    type="text" placeholder='เช่น 5 เดือน หรือ 1 ปี' 
-                    className='border rounded-2xl p-1.5 w-full font-bold'/>
-            </div>
-        </div>
-
-        <div className='flex mt-8'>
-            <TriangleAlert size={28} absoluteStrokeWidth />
-            <h2 className='ml-2 font-extrabold underline text-lg'>อาการที่พบ</h2>
-        </div>
-        <div className='flex flex-wrap justify-center max-w-4xl gap-4 mt-4 w-full'>
-            <div className='w-64 lg:w-[calc(100%-1rem)] md:w-[calc(66%-1rem)]'>
-                <p className='mb-2 font-bold'>ส่วนที่มีปัญหา</p>
-                <Select onChange={(e) => setType(e.target.value)} required>
+                <div>
+                    <p className='font-bold mb-2'>ชนิดดิน</p>
+                    <Select onValueChange={setSoilType}>
                     <SelectTrigger className="w-full rounded-2xl border border-black">
-                    <SelectValue placeholder="เลือกส่วนที่มีปัญหา" />
+                        <SelectValue placeholder="เลือกชนิดดิน" />
                     </SelectTrigger>
                     <SelectContent>
-                    <SelectGroup>
-                        <SelectItem value="ใบ">ใบ</SelectItem>
-                        <SelectItem value="ลำต้น">ลำต้น</SelectItem>
-                        <SelectItem value="ราก">ราก</SelectItem>
-                        <SelectItem value="ดอก">ดอก</SelectItem>
-                        <SelectItem value="ผล">ผล</SelectItem>
-                        <SelectItem value="ยอดอ่อน">ยอดอ่อน</SelectItem>
-                        <SelectItem value="กิ่งก้าน">กิ่งก้าน</SelectItem>
-                        <SelectItem value="ทั้งต้น">ทั้งต้น</SelectItem>
-                    </SelectGroup>
+                        <SelectGroup>
+                        <SelectItem value="ดินเหนียว">ดินเหนียว</SelectItem>
+                        <SelectItem value="ดินร่วน">ดินร่วน</SelectItem>
+                        <SelectItem value="ดินทราย">ดินทราย</SelectItem>
+                        <SelectItem value="ดินผสม">ดินผสม</SelectItem>
+                        </SelectGroup>
                     </SelectContent>
-                </Select>
-            </div>
-
-            <div className='w-64 md:w-[calc(65%-1rem)] lg:w-[calc(100%-1rem)] mt-2 flex flex-col gap-2'>
-                <p className='font-bold'>ลักษณะอาการ</p>
-                <div className='grid md:grid-cols-3 gap-2 grid-cols-1'>
-                    <div>
-                        <input type="checkbox" id="yellow" value="yellow" className='m-2'/>
-                        <label htmlFor="yellow">ใบเหลือง</label>
-                    </div>
-                    <div>
-                        <input type="checkbox" id='withered' value='witered' className='m-2'/>
-                        <label htmlFor="withered">ใบเหี่ยว</label>
-                    </div>
-                    <div>
-                        <input type="checkbox" id='brown' value='brown' className='m-2'/>
-                        <label htmlFor="brown">ใบมีจุดสีน้ำตาล</label>
-                    </div>
-                    <div>
-                        <input type="checkbox" id='fall' value='fall' className='m-2'/>
-                        <label htmlFor="fall">ใบร่วง</label>
-                    </div>
-                    <div>
-                        <input type="checkbox" id='rotten_stem' value='rotten_stem' className='m-2'/>
-                        <label htmlFor="rotten_stem">ลำต้นเน่า</label>
-                    </div>
-                    <div>
-                        <input type="checkbox" id='pest' value='pest' className='m-2'/>
-                        <label htmlFor="pest">มีแมลง</label>
-                    </div>
-                    <div>
-                        <input type="checkbox" id='flower_fall' value='flower_fall' className='m-2'/>
-                        <label htmlFor="flower_fall">ดอกร่วง</label>
-                    </div>
-                    <div>
-                        <input type="checkbox" id='not_bloom' value='not_bloom' className='m-2'/>
-                        <label htmlFor="not_bloom">ไม่ออกดอก</label>
-                    </div>
-                    <div>
-                        <input type="checkbox" id='root_rot' value='root_rot' className='m-2'/>
-                        <label htmlFor="root_rot">รากเน่า</label>
-                    </div>
+                    </Select>
                 </div>
-            </div>
-        </div>
-        
-        <div className='flex flex-col items-center mt-4 w-full'>
-            <div className='flex items-center'>
-                <Thermometer size={28} absoluteStrokeWidth />
-                <h2 className='ml-2 font-extrabold underline text-lg'>สภาพแวดล้อม</h2>
-            </div>
-            
-            <div className='w-full max-w-4xl px-4'>
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-y-4 mt-4'>
-                    {/* สำหรับความถี่การรดน้ำ */}
-                    <div className='mx-auto w-full max-w-62 lg:max-w-[calc(100%-1rem)] md:max-w-[calc(67%-1rem)] md:mr-2'>
-                        <p className='font-bold mb-2'>ความถี่การรดน้ำ</p>
-                        <Select onChange={(e) => setType(e.target.value)} required>
-                            <SelectTrigger className="w-full rounded-2xl border border-black">
-                            <SelectValue placeholder="เลือกความถี่" />
-                            </SelectTrigger>
-                            <SelectContent>
-                            <SelectGroup>
-                                <SelectItem value="รดน้ำทุกวัน">รดน้ำทุกวัน</SelectItem>
-                                <SelectItem value="รดน้ำวันเว้นวัน">รดน้ำวันเว้นวัน</SelectItem>
-                                <SelectItem value="รดน้ำ 2-3 ครั้งต่อสัปดาห์">รดน้ำ 2-3 ครั้งต่อสัปดาห์</SelectItem>
-                                <SelectItem value="รดน้ำสัปดาห์ละครั้ง">รดน้ำสัปดาห์ละครั้ง</SelectItem>
-                                <SelectItem value="รดน้ำเมื่อดินแห้ง">รดน้ำเมื่อดินแห้ง</SelectItem>
-                            </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                    </div>
 
-                    {/* สำหรับแสงแดดที่ได้รับ */}
-                    <div className='mx-auto w-full max-w-62 lg:max-w-[calc(100%-1rem)] md:max-w-[calc(67%-1rem)] md:ml-2'>
-                        <p className='font-bold mb-2'>แสงแดดที่ได้รับ</p>
-                        <Select onChange={(e) => setType(e.target.value)} required>
-                            <SelectTrigger className="w-full rounded-2xl border border-black">
-                            <SelectValue placeholder="เลือกแสงแดด" />
-                            </SelectTrigger>
-                            <SelectContent>
-                            <SelectGroup>
-                                <SelectItem value="แสงแดดจัด">แสงแดดจัด (6-8 ชั่วโมงต่อวัน)</SelectItem>
-                                <SelectItem value="แสงแดดปานกลาง">แสงแดดปานกลาง (4-6 ชั่วโมงต่อวัน)</SelectItem>
-                                <SelectItem value="แสงแดดรำไร">แสงแดดรำไร (2-4 ชั่วโมงต่อวัน)</SelectItem>
-                                <SelectItem value="แสงแดดน้อย">แสงแดดน้อย (น้อยกว่า 2 ชั่วโมงต่อวัน)</SelectItem>
-                            </SelectGroup>
-                            </SelectContent>
-                        </Select>  
-                    </div>
-
-                    {/* สำหรับชนิดดิน */}
-                    <div className='mx-auto w-full max-w-62 lg:max-w-[calc(100%-1rem)] md:max-w-[calc(67%-1rem)] md:mr-2'>
-                        <p className='font-bold mb-2'>ชนิดดิน</p>
-                        <Select onChange={(e) => setType(e.target.value)} required>
-                            <SelectTrigger className="w-full rounded-2xl border border-black">
-                            <SelectValue placeholder="เลือกชนิดดิน" />
-                            </SelectTrigger>
-                            <SelectContent>
-                            <SelectGroup>
-                                <SelectItem value="ดินเหนียว">ดินเหนียว</SelectItem>
-                                <SelectItem value="ดินร่วน">ดินร่วน</SelectItem>
-                                <SelectItem value="ดินทราย">ดินทราย</SelectItem>
-                                <SelectItem value="ดินผสม">ดินผสม</SelectItem>
-                            </SelectGroup>
-                            </SelectContent>
-                        </Select>
-                    </div>
-
+                <div>
+                    <p className='font-bold mb-2'>อุณหภูมิโดยเฉลี่ย</p>
+                    <Select onValueChange={setTemperature}>
+                    <SelectTrigger className="w-full rounded-2xl border border-black">
+                        <SelectValue placeholder="เลือกช่วงอุณหภูมิ" />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectGroup>
+                        <SelectItem value="ต่ำกว่า 15°C">ต่ำกว่า 15°C</SelectItem>
+                        <SelectItem value="15-25°C">15-25°C</SelectItem>
+                        <SelectItem value="26-32°C">26-32°C</SelectItem>
+                        <SelectItem value="มากกว่า 32°C">มากกว่า 32°C</SelectItem>
+                        </SelectGroup>
+                    </SelectContent>
+                    </Select>
                 </div>
-            </div>
-        </div>
 
-        <button className='mt-2' type='submit'>
-            <div className='bg-[#373E11] transition duration-300 ease-in-out hover:-translate-y-1 hover:scale-110 text-[#E6E4BB] border font-bold py-2 px-4 rounded-2xl mt-8'>
+            </div>
+            </section>
+
+            {/* วัสดุปลูก */}
+            <section>
+            <p className='font-semibold mb-2 mt-6'>วัสดุปลูก (เลือกได้หลายอย่าง)</p>
+            <div className='grid md:grid-cols-2 gap-3'>
+                {materialOptions.map((item, index) => (
+                <label key={index} className='flex items-center'>
+                    <input
+                    type="checkbox"
+                    value={item}
+                    onChange={(e) => handleCheckboxChange(e, setMaterials, materials)}
+                    className='mr-2'
+                    />
+                    {item}
+                </label>
+                ))}
+            </div>
+            </section>
+
+            {/* ปุ๋ยที่ใช้ */}
+            <section>
+            <p className='font-semibold mb-2 mt-6'>ประเภทปุ๋ยที่ใช้ (เลือกได้หลายอย่าง)</p>
+            <div className='grid md:grid-cols-2 gap-3'>
+                {fertilizerOptions.map((item, index) => (
+                <label key={index} className='flex items-center'>
+                    <input
+                    type="checkbox"
+                    value={item}
+                    onChange={(e) => handleCheckboxChange(e, setFertilizers, fertilizers)}
+                    className='mr-2'
+                    />
+                    {item}
+                </label>
+                ))}
+            </div>
+            </section>
+
+            {/* ปุ่ม */}
+            <div className='flex justify-center mt-4'>
+            <button
+                onClick={handleSubmit}
+                className='bg-[#373E11] text-[#E6E4BB] font-bold py-2 px-4 rounded-xl hover:scale-105 transition'
+            >
                 วิเคราะห์อาการ
+            </button>
             </div>
-        </button>
-    </div>
-    </>
-  )
-}
+        </div>
+        </div>
 
-export default page
+  );
+};
+
+export default TreeDiagnosisForm;

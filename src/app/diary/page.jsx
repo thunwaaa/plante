@@ -48,13 +48,13 @@ const DiaryPage = () => {
     return (
         <>
             <div className='flex justify-center'>
-                <h1 className='font-extrabold text-2xl md:text-4xl mt-8'>สมุดจดบันทึกต้นไม้</h1>
+                <h1 className='font-extrabold text-3xl md:text-4xl mt-8'>สมุดจดบันทึกต้นไม้</h1>
             </div>
 
-            <div className="flex flex-wrap justify-center mt-8 mx-3">
+            <div className="flex flex-wrap justify-center mx-3">
                 {plants.map((plant) => (
                     <div key={plant._id} className="p-4 border rounded-xl w-64 shadow-md bg-[#E6E4BB] relative mx-3 mt-8">
-                        <div className="h-40 w-full bg-white rounded-md overflow-hidden mb-2 flex justify-center items-center">
+                        <div className="h-40 w-full rounded-md overflow-hidden mb-2 flex justify-center items-center">
                             {plant.image_url ? (
                                 <img
                                     src={plant.image_url}
