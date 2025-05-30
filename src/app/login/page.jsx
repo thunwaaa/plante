@@ -1,65 +1,123 @@
-'use client'
+"use client";
 
-import React, { useState } from 'react'
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { useRouter } from 'next/navigation';
-import Image from 'next/image';
+import Image from "next/image";
+import { signInWithEmailAndPassword, signInWithPopup, GoogleAuthProvider } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Icons } from "@/components/icons";
 
-const LoginPage = () => {
+export default function LoginPage() {
   const router = useRouter();
-  const [formData, setFormData] = useState({
-    email: '',
-    password: ''
-  });
-  const [error, setError] = useState('');
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
 
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.id]: e.target.value
-    });
-  };
-
-  const handleSubmit = async (e) => {
+  const handleEmailLogin = async (e) => {
     e.preventDefault();
-    setError('');
-
-    const requestBody = {
-      email: formData.email,
-      password: formData.password
-    };
-
-    console.log('Sending login request with:', { ...requestBody, password: '***' });
+    setError("");
+    setIsLoading(true);
 
     try {
-      const response = await fetch('http://localhost:8080/api/users/login', {
-        method: 'POST',
+      // Login with Firebase
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const idToken = await userCredential.user.getIdToken();
+
+      // Verify token with backend
+      const response = await fetch("http://localhost:8080/auth/verify-token", {
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
-        credentials: 'include',
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({ idToken }),
       });
 
-      const data = await response.json();
-      console.log('Login response:', { status: response.status, data });
-
       if (!response.ok) {
-        throw new Error(data.error || 'Login failed');
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to verify token");
       }
 
-      // Store tokens
-      localStorage.setItem('token', data.token);
-      localStorage.setItem('refreshToken', data.refresh_token);
+      const data = await response.json();
+      
+      // Store token and user data in localStorage
+      localStorage.setItem("token", idToken);
+      localStorage.setItem("user", JSON.stringify(data.user));
 
-      // Dispatch login event
-      window.dispatchEvent(new Event('login'));
+      // Wait a bit to ensure localStorage is updated
+      await new Promise(resolve => setTimeout(resolve, 100));
 
-      // Redirect to home page
-      router.push('/dashboard');
-    } catch (err) {
-      console.error('Login error:', err);
-      setError(err.message || 'An error occurred during login');
+      // Verify token is stored before redirecting
+      const storedToken = localStorage.getItem("token");
+      if (!storedToken) {
+        throw new Error("Failed to store authentication token");
+      }
+
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Login error:", error);
+      setError(error.message);
+      // Clear any partial data
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleLogin = async () => {
+    setError("");
+    setIsLoading(true);
+
+    try {
+      const provider = new GoogleAuthProvider();
+      const userCredential = await signInWithPopup(auth, provider);
+      const idToken = await userCredential.user.getIdToken();
+
+      // Verify token with backend
+      const response = await fetch("http://localhost:8080/auth/verify-token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ idToken }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.error || "Failed to verify token");
+      }
+
+      const data = await response.json();
+      
+      // Store token and user data in localStorage
+      localStorage.setItem("token", idToken);
+      localStorage.setItem("user", JSON.stringify(data.user));
+
+      // Wait a bit to ensure localStorage is updated
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Verify token is stored before redirecting
+      const storedToken = localStorage.getItem("token");
+      if (!storedToken) {
+        throw new Error("Failed to store authentication token");
+      }
+
+      router.push("/dashboard");
+    } catch (error) {
+      console.error("Google login error:", error);
+      setError(error.message);
+      // Clear any partial data
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -82,31 +140,69 @@ const LoginPage = () => {
         </div>
         {/* Right panel with sign-in form */}
         <div className='flex flex-col justify-center items-center self-center w-1/2'>
-          <h1 className="text-4xl font-bold mb-8 underline">Login</h1>
+          <h1 className="text-4xl font-bold underline mb-3">Login</h1>
+          <p className="mt-3">Enter your email to sign in to your account</p>
           {error && <p className="text-red-500 mb-4">{error}</p>}
-          <form onSubmit={handleSubmit} className='flex flex-col text-2xl space-y-4 w-3/4 max-w-md'>
-            <label htmlFor="email">Email</label>
+          <form onSubmit={handleEmailLogin} className='flex flex-col text-2xl space-y-3 w-3/4 max-w-md mt-4'>
+            <label htmlFor="email-desktop">Email</label>
             <input 
-              id='email'
+              id='email-desktop'
               type="email" 
               required 
-              value={formData.email}
-              onChange={handleChange}
-              className='border border-[#373E11] rounded-lg h-12 p-2 text-lg'
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className='border border-[#373E11] rounded-lg h-12 p-2 text-base'
               placeholder='Enter your Email'
             />
-            <label htmlFor="password">Password</label>
+            <label htmlFor="login-password-desktop">Password</label>
             <input 
-              id='password'
+              id='login-password-desktop'
               type="password"
               required
-              value={formData.password}
-              onChange={handleChange}
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
               placeholder='Enter your Password'
-              className='border border-[#373E11] rounded-lg h-12 p-2 text-lg' 
+              className='border border-[#373E11] rounded-lg h-12 p-2 text-base' 
             />
-            <button type="submit" className='bg-[#373E11] text-[#E6E4BB] p-2 mt-5 rounded-2xl hover:bg-[#454b28]'>Sign in</button>
+            <Button type="submit" disabled={isLoading} className="border my-4 bg-[#373E11] text-[#E6E4BB] hover:bg-[#434726]">
+                {isLoading && (
+                  <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Sign In
+            </Button>
+            <div className="relative">
+              <div className="absolute inset-0 flex items-center">
+                <span className="w-full border-t" />
+              </div>
+              <div className="relative flex justify-center text-xs uppercase">
+                <span className="bg-background px-2 text-muted-foreground">
+                  Or continue with
+                </span>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              type="button"
+              disabled={isLoading}
+              onClick={handleGoogleLogin}
+              className="my-4"
+            >
+              {isLoading ? (
+                <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <Icons.google className="mr-2 h-4 w-4" />
+              )}
+              Google
+            </Button>
           </form>
+          <div className="text-sm text-muted-foreground text-center mt-3">
+            <Link
+              href="/forgot-password"
+              className="hover:text-brand underline underline-offset-4"
+            >
+              Forgot your password?
+            </Link>
+          </div>
         </div>
       </div>
 
@@ -131,39 +227,75 @@ const LoginPage = () => {
           <div className='flex flex-col items-center px-4 py-3 w-full'>
             <h1 className="text-3xl font-bold mb-5 underline">Login</h1>
             {error && <p className="text-red-500 mb-4">{error}</p>}
-            <form onSubmit={handleSubmit} className='flex flex-col w-full max-w-md space-y-3'>
+            <form onSubmit={handleEmailLogin} className='flex flex-col w-full max-w-md space-y-3'>
               <label htmlFor="email" className="text-xl">Email</label>
               <input 
                 id='email'
                 type="email" 
                 required 
-                value={formData.email}
-                onChange={handleChange}
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 className='border border-[#373E11] rounded-lg h-12 p-2 text-lg'
                 placeholder='Enter your Email'
               />
-              <label htmlFor="password" className="text-xl">Password</label>
+              <label htmlFor="login-password-mobile">Password</label>
               <input 
-                id='password'
+                id='login-password-mobile'
                 type="password"
                 required
-                value={formData.password}
-                onChange={handleChange}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 placeholder='Enter your Password'
                 className='border border-[#373E11] rounded-lg h-12 p-2 text-lg' 
               />
-              <button type="submit" className='bg-[#373E11] text-[#E6E4BB] p-3 mt-2 rounded-2xl hover:bg-[#454b28] text-xl'>LOGIN</button>
+
+              <Button type="submit" disabled={isLoading} className="border my-4 bg-[#373E11] text-[#E6E4BB] hover:bg-[#434726]">
+                {isLoading && (
+                  <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                )}
+                Sign In
+              </Button>
+
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">
+                    Or continue with
+                  </span>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                type="button"
+                disabled={isLoading}
+                onClick={handleGoogleLogin}
+                className="my-4"
+              >
+                {isLoading ? (
+                  <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Icons.google className="mr-2 h-4 w-4" />
+                )}
+                Google
+              </Button>
             </form>
             
+            
             {/* Sign-in CTA */}
-            <div className='mt-8 pt-8 border-t border-[#373E11] w-full max-w-md text-center'>
-              <h2 className='text-xl mb-4'>Don't have an account? <Link href="/signup" className='underline text-blue-600'>Sign up</Link></h2>
+            <div className="text-sm text-muted-foreground text-center mt-2">
+              Don&apos;t have an account?{" "}
+              <Link
+                href="/signup"
+                className="hover:text-brand underline underline-offset-4"
+              >
+                Sign up
+              </Link>
             </div>
           </div>
         </div>
       </div>
     </>
-  )
+  );
 }
-
-export default LoginPage;

@@ -75,6 +75,10 @@ const uploadImage = async (file) => {
 const apiCall = async (endpoint, method = 'GET', data = null) => {
   try {
     const token = getAuthToken();
+    if (!token) {
+      throw new Error('No authentication token found');
+    }
+
     const headers = {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
@@ -96,7 +100,7 @@ const apiCall = async (endpoint, method = 'GET', data = null) => {
     if (response.status === 401) {
       // Clear invalid token
       localStorage.removeItem('token');
-      // Redirect to login
+      localStorage.removeItem('user');
       if (typeof window !== 'undefined') {
         window.location.href = '/login';
       }
@@ -111,6 +115,10 @@ const apiCall = async (endpoint, method = 'GET', data = null) => {
     const responseData = await response.json();
     return responseData;
   } catch (error) {
+    if (error.message === 'No authentication token found' || 
+        error.message === 'Session expired. Please login again.') {
+      throw error; // Let the dashboard handle these specific errors
+    }
     console.error('API call error:', error);
     throw error;
   }
@@ -149,25 +157,13 @@ export const plantApi = {
         imageUrl = await uploadImage(plantData.imageFile);
       }
 
-      // Create plant with image URL
-      const response = await fetch(`${API_URL}/plants/new`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${getAuthToken()}`,
-        },
-        body: JSON.stringify({
-          ...plantData,
-          image_url: imageUrl,
-        }),
+      // Create plant with image URL using apiCall helper
+      const data = await apiCall('/plants/new', 'POST', {
+        ...plantData,
+        image_url: imageUrl,
       });
 
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || 'Failed to create plant');
-      }
-
-      return await response.json();
+      return data;
     } catch (error) {
       console.error('Error creating plant:', error);
       throw error;

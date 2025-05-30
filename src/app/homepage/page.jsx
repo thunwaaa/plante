@@ -30,7 +30,7 @@ export default function Home() {
             alt="f1" 
             width={490}
             height={490}
-            className="max-md:w-42 max-lg:w-72 xl:w-[490px] mt-8 lg:mt-4 lg:mr-8"
+            className="max-md:w-42 max-lg:w-72 xl:w-[490px] h-auto mt-8 lg:mt-4 lg:mr-8"
             priority
           />
         </div>
@@ -53,7 +53,7 @@ export default function Home() {
             alt="f2" 
             width={400}
             height={400}
-            className="max-md:w-36 max-lg:w-56 xl:w-[400px] mt-8 lg:mt-8 sm:ml-2 lg:ml-6"
+            className="max-md:w-36 max-lg:w-56 xl:w-[400px] h-auto mt-8 lg:mt-8 sm:ml-2 lg:ml-6"
             priority
           />
           <p className="text-5xl lg:text-6xl md:text-4xl max-sm:text-lg max-sm:m-2 mx-5 my-9 lg:my-16 lg:mx-10 max-sm:mt-8 md:mt-16 lg:mt-24 text-[#E6E4BB] text-right">Find the Perfect Green <br /> Companion for Your <br />Environment!</p>
@@ -80,7 +80,7 @@ export default function Home() {
             alt="f3" 
             width={550}
             height={550}
-            className="max-md:w-44 max-lg:w-80 xl:w-[550px] mt-8 lg:mt-14 lg:mb-14 max-sm:mr-[-8] lg:mr-6 max-sm:mt-8"
+            className="max-md:w-44 max-lg:w-80 xl:w-[550px] h-auto mt-8 lg:mt-14 lg:mb-14 max-sm:mr-[-8] lg:mr-6 max-sm:mt-8"
             priority
           />
         </div>
@@ -103,7 +103,7 @@ export default function Home() {
             alt="f4" 
             width={600}
             height={600}
-            className="max-md:w-48 max-lg:w-80 xl:w-[600px] mt-8 lg:mt-8 sm:ml-2 lg:ml-6"
+            className="max-md:w-48 max-lg:w-80 xl:w-[600px] h-auto mt-8 lg:mt-8 sm:ml-2 lg:ml-6"
             priority
           />
           <p className="text-5xl lg:text-6xl md:text-4xl max-sm:text-lg max-sm:m-2 mx-5 my-9 lg:my-16 lg:mx-10 max-sm:mt-12 md:mt-24 lg:mt-36 text-[#E6E4BB] text-right">Track Your <br /> Plant's Growth</p>
