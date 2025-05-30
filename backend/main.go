@@ -11,6 +11,7 @@ import (
 	"authentication/controllers"
 	"authentication/helpers"
 	"authentication/routes"
+	"authentication/services"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -59,6 +60,7 @@ func main() {
 	controllers.InitUserCollection()
 	controllers.InitPlantCollection()
 	controllers.InitRecommendationCollection()
+	controllers.InitReminderCollection()
 
 	// Import plant data from JSON
 	if err := helpers.ImportPlantData(client); err != nil {
@@ -68,10 +70,26 @@ func main() {
 	// Initialize controllers
 	diagnosisController := controllers.NewDiagnosisController(db)
 
+	// Initialize services
+	authService, err := services.NewAuthService(db)
+	if err != nil {
+		log.Fatal("Failed to initialize auth service:", err)
+	}
+
+	notificationService, err := services.NewNotificationService(db)
+	if err != nil {
+		log.Fatal("Failed to initialize notification service:", err)
+	}
+	scheduler := services.NewScheduler(notificationService)
+
 	// Initialize diagnosis data
 	if err := diagnosisController.InitializeDiagnosisData(); err != nil {
 		log.Printf("Warning: Failed to initialize diagnosis data: %v", err)
 	}
+
+	// Start the scheduler
+	scheduler.Start()
+	defer scheduler.Stop()
 
 	// Initialize router
 	router := gin.Default()
@@ -103,10 +121,9 @@ func main() {
 	}))
 
 	// Setup routes
-	apiGroup := router.Group("/api")
-	routes.SetupRoutes(router)
-	routes.PlantRoutes(router)
-	routes.SetupRecommendationRoutes(apiGroup, db)
+	routes.SetupRoutes(router, authService)
+	routes.PlantRoutes(router, authService)
+	routes.SetupRecommendationRoutes(router.Group("/api"), authService)
 	routes.SetupDiagnosisRoutes(router, diagnosisController)
 
 	// Initialize Cloudinary

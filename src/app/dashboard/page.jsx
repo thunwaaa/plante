@@ -14,6 +14,8 @@ import {
 } from "@/components/ui/dialog"
 import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
+import { auth } from '@/lib/firebase'
+import { onAuthStateChanged } from 'firebase/auth'
 
 const page = () => {
   const router = useRouter()
@@ -24,63 +26,130 @@ const page = () => {
 
   const refreshPlants = async () => {
     try {
-      setLoading(true);
-      const data = await plantApi.getPlants();
-      if (Array.isArray(data)) {
-        setPlants(data);
-      } else {
-        setPlants([]);
+      const currentUser = auth.currentUser;
+      if (!currentUser) {
+        console.log("No authenticated user found");
+        throw new Error("No authenticated user");
       }
-      setError(null);
-    } catch (err) {
-      if (err.message === 'Session expired. Please login again.') {
-        // Let the API handle the redirect
+
+      // Get fresh token
+      const idToken = await currentUser.getIdToken(true);
+      console.log("Got fresh token for plants request");
+
+      // First verify token with backend
+      const verifyResponse = await fetch("http://localhost:8080/auth/verify-token", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ idToken }),
+      });
+
+      if (!verifyResponse.ok) {
+        const errorData = await verifyResponse.json();
+        console.error("Token verification failed:", errorData);
+        throw new Error(errorData.error || "Token verification failed");
+      }
+
+      const verifyData = await verifyResponse.json();
+      console.log("Token verified successfully:", verifyData);
+
+      // Check verification status
+      const checkResponse = await fetch("http://localhost:8080/auth/check-verification", {
+        headers: {
+          "Authorization": `Bearer ${idToken}`,
+        },
+      });
+
+      if (!checkResponse.ok) {
+        const errorData = await checkResponse.json();
+        console.error("Verification check failed:", errorData);
+        throw new Error(errorData.error || "Verification check failed");
+      }
+
+      const checkData = await checkResponse.json();
+      console.log("Verification status:", checkData);
+
+      if (!checkData.is_verified) {
+        console.log("User not verified, redirecting to verification page");
+        router.push("/verify-email");
         return;
       }
-      setError('Failed to load plants. Please try again later.');
-      console.error('Error fetching plants:', err);
-      setPlants([]);
+
+      // Now fetch plants with the verified token
+      const plantsResponse = await fetch("http://localhost:8080/api/plants/dashboard", {
+        headers: {
+          "Authorization": `Bearer ${idToken}`,
+        },
+      });
+
+      if (!plantsResponse.ok) {
+        const errorData = await plantsResponse.json();
+        console.error("Failed to fetch plants:", errorData);
+        throw new Error(errorData.error || "Failed to fetch plants");
+      }
+
+      const plantsData = await plantsResponse.json();
+      console.log("Plants fetched successfully:", plantsData);
+      setPlants(plantsData);
+      setError(null);
+    } catch (error) {
+      console.error("Error in refreshPlants:", error);
+      setError(error.message);
+      
+      if (error.message === "No authenticated user" || 
+          error.message.includes("Token") || 
+          error.message.includes("Unauthorized")) {
+        // Clear session and redirect to login
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        router.push("/login?error=session_expired");
+      }
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    const checkAuth = () => {
-      const token = localStorage.getItem('token');
-      if (!token) {
-        router.push('/login');
-        return;
-      }
-      refreshPlants();
+    let unsubscribe;
+    
+    const checkAuth = async () => {
+      unsubscribe = onAuthStateChanged(auth, async (user) => {
+        if (user) {
+          console.log("Auth state changed - User is signed in:", user.uid);
+          try {
+            // Get fresh token
+            const idToken = await user.getIdToken(true);
+            console.log("Got fresh token on auth state change");
+            
+            // Store token
+            localStorage.setItem("token", idToken);
+            
+            // Refresh plants
+            await refreshPlants();
+          } catch (error) {
+            console.error("Error in auth state change:", error);
+            setError(error.message);
+          }
+        } else {
+          console.log("Auth state changed - No user");
+          localStorage.removeItem("token");
+          localStorage.removeItem("user");
+          router.push("/login");
+        }
+      }, (error) => {
+        console.error("Auth state change error:", error);
+        setError(error.message);
+      });
     };
 
     checkAuth();
 
-    const handleStorageChange = (e) => {
-      if (e.key === 'lastUpdatedPlant') {
-        refreshPlants();
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === 'visible') {
-        refreshPlants();
-      }
-    };
-
-    const handlePlantUpdate = () => {
-      refreshPlants();
-    };
-
-    window.addEventListener('storage', handleStorageChange);
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    window.addEventListener('plantUpdated', handlePlantUpdate);
-
+    // Cleanup subscription
     return () => {
-      window.removeEventListener('storage', handleStorageChange);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-      window.removeEventListener('plantUpdated', handlePlantUpdate);
+      if (unsubscribe) {
+        unsubscribe();
+      }
     };
   }, [router]);
 
@@ -89,13 +158,44 @@ const page = () => {
   }
 
   const handleDelete = async (plantId) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      router.push('/login');
+      return;
+    }
+
     try {
-      await plantApi.deletePlant(plantId);
+      const response = await fetch(`${API_URL}/plants/${plantId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+          localStorage.removeItem('user');
+          router.push('/login');
+          return;
+        }
+        throw new Error(`Failed to delete plant: ${response.statusText}`);
+      }
+
       setPlants(plants.filter(plant => plant._id !== plantId));
       setOpenDialog(null);
     } catch (err) {
-      setError('Failed to delete plant. Please try again.');
       console.error('Error deleting plant:', err);
+      if (err.message.includes('401') || 
+          err.message.includes('unauthorized') || 
+          err.message.includes('token')) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        router.push('/login');
+        return;
+      }
+      setError('Failed to delete plant. Please try again.');
     }
   }
 

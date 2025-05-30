@@ -31,21 +31,11 @@ func CreatePlant() gin.HandlerFunc {
 			return
 		}
 
-		// Get user ID from context (set by auth middleware)
-		userID, exists := c.Get("user_id")
-		if !exists {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
-			return
-		}
+		// Get user from context (set by auth middleware)
+		user := c.MustGet("user").(*models.User)
 
-		// Convert user ID to ObjectID
-		userObjID, err := primitive.ObjectIDFromHex(userID.(string))
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-			return
-		}
-
-		plant.UserID = userObjID
+		// Use the user's ID field which is an ObjectID
+		plant.UserID = user.ID
 		plant.CreatedAt = time.Now()
 		plant.UpdatedAt = time.Now()
 
@@ -72,20 +62,11 @@ func GetUserPlants() gin.HandlerFunc {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 		defer cancel()
 
-		userID, exists := c.Get("user_id")
-		if !exists {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "User not authenticated"})
-			return
-		}
-
-		userObjID, err := primitive.ObjectIDFromHex(userID.(string))
-		if err != nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid user ID"})
-			return
-		}
+		// Get user from context (set by auth middleware)
+		user := c.MustGet("user").(*models.User)
 
 		// Find all plants for the user
-		cursor, err := plantCollection.Find(ctx, bson.M{"user_id": userObjID})
+		cursor, err := plantCollection.Find(ctx, bson.M{"user_id": user.ID})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -108,9 +89,9 @@ func GetUserPlants() gin.HandlerFunc {
 				Name:          plant.Name,
 				Type:          plant.Type,
 				Container:     plant.Container,
-				PlantHeight:   plant.PlantHeight, // Use new field
-				PlantDate:     plant.PlantDate,   // Use new field
-				ImageURL:      plant.ImageURL,    // Use new field
+				PlantHeight:   plant.PlantHeight,
+				PlantDate:     plant.PlantDate,
+				ImageURL:      plant.ImageURL,
 				CreatedAt:     plant.CreatedAt,
 				UpdatedAt:     plant.UpdatedAt,
 				GrowthRecords: plant.GrowthRecords,
@@ -179,8 +160,8 @@ func GetPlant() gin.HandlerFunc {
 		}
 
 		// Verify ownership
-		userID, exists := c.Get("user_id")
-		if !exists || plant.UserID.Hex() != userID.(string) {
+		user := c.MustGet("user").(*models.User)
+		if plant.UserID != user.ID {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized access"})
 			return
 		}
@@ -261,8 +242,8 @@ func UpdatePlant() gin.HandlerFunc {
 		}
 
 		// Verify ownership
-		userID, exists := c.Get("user_id")
-		if !exists || existingPlant.UserID.Hex() != userID.(string) {
+		user := c.MustGet("user").(*models.User)
+		if existingPlant.UserID != user.ID {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized access"})
 			return
 		}
@@ -368,8 +349,8 @@ func DeletePlant() gin.HandlerFunc {
 		}
 
 		// Verify ownership
-		userID, exists := c.Get("user_id")
-		if !exists || plant.UserID.Hex() != userID.(string) {
+		user := c.MustGet("user").(*models.User)
+		if plant.UserID != user.ID {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized access"})
 			return
 		}
