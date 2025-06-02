@@ -8,7 +8,7 @@ import (
 
 type Reminder struct {
 	ID               primitive.ObjectID `bson:"_id,omitempty" json:"id,omitempty"`
-	UserID           primitive.ObjectID `bson:"user_id" json:"userId"`
+	UserID           string             `bson:"user_id" json:"userId"`
 	PlantID          primitive.ObjectID `bson:"plant_id" json:"plantId"`
 	Type             string             `bson:"type" json:"type"`                                 // e.g., "watering", "fertilizing"
 	Frequency        string             `bson:"frequency" json:"frequency"`                       // e.g., "once", "daily", "weekly"

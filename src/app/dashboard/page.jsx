@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { format } from 'date-fns'
 import { auth } from '@/lib/firebase'
 import { onAuthStateChanged } from 'firebase/auth'
+import { requestNotificationPermission } from '@/lib/notification'
 
 const page = () => {
   const router = useRouter()
@@ -125,6 +126,16 @@ const page = () => {
             // Store token
             localStorage.setItem("token", idToken);
             
+            // Request notification permission and save FCM token if not already granted
+            if (typeof window !== 'undefined' && Notification && Notification.permission !== 'granted') {
+              try {
+                await requestNotificationPermission();
+                console.log('FCM token requested and sent to backend');
+              } catch (err) {
+                console.warn('FCM token not saved:', err);
+              }
+            }
+
             // Refresh plants
             await refreshPlants();
           } catch (error) {

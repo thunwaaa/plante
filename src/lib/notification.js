@@ -1,19 +1,7 @@
-import { initializeApp } from 'firebase/app';
+import app from './firebase';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { API_URL } from './api';
 
-const firebaseConfig = {
-  // Your Firebase config here
-  apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-  authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-  projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-  storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-  messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-  appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
 const messaging = getMessaging(app);
 
 // Helper function to format notification message
@@ -56,7 +44,7 @@ export const requestNotificationPermission = async () => {
             });
             
             // Save token to backend
-            const response = await fetch(`${API_URL}/api/users/fcm-token`, {
+            const response = await fetch(`${API_URL}/users/fcm-token`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -86,8 +74,13 @@ export const onMessageListener = () =>
             const { notification, data } = payload;
             
             if (data && data.reminder) {
-                // Handle reminder-specific notification
-                const reminder = JSON.parse(data.reminder);
+                let reminder = null;
+                try {
+                    reminder = typeof data.reminder === 'string' ? JSON.parse(data.reminder) : data.reminder;
+                } catch (e) {
+                    console.error('Invalid reminder JSON:', data.reminder, e);
+                    return; // Skip further processing if JSON is invalid
+                }
                 const { title, body } = formatNotificationMessage(reminder);
                 
                 new Notification(title, {
