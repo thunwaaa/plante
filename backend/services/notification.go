@@ -77,7 +77,8 @@ func (s *NotificationService) SendNotification(token string, title, body string,
 
 func (s *NotificationService) CheckAndSendReminders() error {
 	ctx := context.Background()
-	now := time.Now()
+	loc, _ := time.LoadLocation("Asia/Bangkok")
+	now := time.Now().In(loc)
 
 	// Get all active reminders
 	cursor, err := s.db.Collection("reminders").Find(ctx, bson.M{"is_active": true})
@@ -94,7 +95,7 @@ func (s *NotificationService) CheckAndSendReminders() error {
 	for _, reminder := range reminders {
 		// Get user's FCM token
 		var user models.User
-		err := s.db.Collection("users").FindOne(ctx, bson.M{"_id": reminder.UserID}).Decode(&user)
+		err := s.db.Collection("users").FindOne(ctx, bson.M{"user_id": reminder.UserID}).Decode(&user)
 		if err != nil {
 			log.Printf("Error fetching user for reminder %s: %v", reminder.ID.Hex(), err)
 			continue
@@ -136,6 +137,14 @@ func (s *NotificationService) CheckAndSendReminders() error {
 				continue
 			}
 
+			// ตรวจสอบ title/body
+			title, okTitle := notificationData["title"].(string)
+			body, okBody := notificationData["body"].(string)
+			if !okTitle || !okBody || title == "" || body == "" {
+				log.Printf("Notification data missing title/body for reminder %s", reminder.ID.Hex())
+				continue
+			}
+
 			// Convert notification data to string map for FCM
 			data := make(map[string]string)
 			for k, v := range notificationData {
@@ -143,7 +152,7 @@ func (s *NotificationService) CheckAndSendReminders() error {
 			}
 
 			// Send notification
-			err = s.SendNotification(*user.FCMToken, data["title"], data["body"], data)
+			err = s.SendNotification(*user.FCMToken, title, body, data)
 			if err != nil {
 				log.Printf("Error sending notification for reminder %s: %v", reminder.ID.Hex(), err)
 				continue

@@ -257,22 +257,7 @@ func SetupRoutes(router *gin.Engine, authService *services.AuthService) {
 
 	// Protected routes
 	api := router.Group("/api")
-	api.Use(func(c *gin.Context) {
-		// Create a custom handler that converts between http.HandlerFunc and gin.HandlerFunc
-		handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			// Get the user from the context after auth middleware
-			if user, ok := r.Context().Value("user").(*models.User); ok {
-				// Create a new gin context with the user
-				c.Set("user", user)
-				c.Next()
-			} else {
-				c.JSON(401, gin.H{"error": "User not authenticated"})
-			}
-		})
-
-		// Apply the auth middleware
-		authMiddleware.AuthMiddleware(handler).ServeHTTP(c.Writer, c.Request)
-	})
+	api.Use(authMiddleware.GinAuthMiddleware())
 	{
 		// User profile
 		api.GET("/profile", func(c *gin.Context) {
@@ -311,6 +296,7 @@ func SetupRoutes(router *gin.Engine, authService *services.AuthService) {
 		reminders := api.Group("/reminders")
 		{
 			reminders.POST("/", controllers.CreateReminder())
+			reminders.POST("", controllers.CreateReminder())
 			reminders.GET("/", controllers.GetReminders())
 			reminders.PUT("/:id", controllers.UpdateReminder())
 			reminders.DELETE("/:id", controllers.DeleteReminder())

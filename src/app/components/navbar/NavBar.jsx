@@ -340,49 +340,6 @@ export function NavBar() {
               >
                 About
               </Link>
-              {/* Mobile Auth Buttons */}
-              {isLoggedIn ? (
-                <Menubar>
-                  <MenubarMenu>
-                    <MenubarTrigger>
-                      <Avatar>
-                        <AvatarImage 
-                          src={userProfile?.profile_image_url || userProfile?.photoURL || "/profile.jpg"} 
-                          alt={userProfile?.name || userProfile?.username || "User"}
-                        />
-                        <AvatarFallback>
-                          {userProfile?.name ? userProfile.name.charAt(0).toUpperCase() : 
-                           userProfile?.username ? userProfile.username.charAt(0).toUpperCase() : 'U'}
-                        </AvatarFallback>
-                      </Avatar>
-                    </MenubarTrigger>
-                    <MenubarContent className="mr-4 !w-32 p-2">
-                      <MenubarItem asChild>
-                        <Link href="/profile" className="w-full flex justify-end hover:bg-[#373E11] hover:text-[#E6E4BB] transition-colors">
-                          Edit Profile
-                        </Link>
-                      </MenubarItem>
-                      <MenubarItem asChild>
-                        <button 
-                          onClick={handleLogout} 
-                          className="w-full flex justify-end text-right hover:bg-red-500 hover:text-white transition-colors rounded-md"
-                        >
-                          Log out
-                        </button>
-                      </MenubarItem>
-                    </MenubarContent>
-                  </MenubarMenu>
-                </Menubar>
-              ) : (
-                <>
-                  <Link href="/login" className="text-base max-sm:text-xs w-72 text-center border border-[#373E11] hover:text-[#E6E4BB] hover:bg-[#373E11]">
-                    Login
-                  </Link>
-                  <Link href="/signup" className="text-base max-sm:text-xs w-full text-center border border-[#373E11] hover:text-[#E6E4BB] hover:bg-[#373E11]">
-                    Sign up
-                  </Link>
-                </>
-              )}
             </div>
           </motion.div>
         )}

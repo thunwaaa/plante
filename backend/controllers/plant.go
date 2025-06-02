@@ -34,8 +34,8 @@ func CreatePlant() gin.HandlerFunc {
 		// Get user from context (set by auth middleware)
 		user := c.MustGet("user").(*models.User)
 
-		// Use the user's ID field which is an ObjectID
-		plant.UserID = user.ID
+		// Use the user's Firebase UID string
+		plant.UserID = user.User_id
 		plant.CreatedAt = time.Now()
 		plant.UpdatedAt = time.Now()
 
@@ -66,7 +66,7 @@ func GetUserPlants() gin.HandlerFunc {
 		user := c.MustGet("user").(*models.User)
 
 		// Find all plants for the user
-		cursor, err := plantCollection.Find(ctx, bson.M{"user_id": user.ID})
+		cursor, err := plantCollection.Find(ctx, bson.M{"user_id": user.User_id})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 			return
@@ -161,7 +161,7 @@ func GetPlant() gin.HandlerFunc {
 
 		// Verify ownership
 		user := c.MustGet("user").(*models.User)
-		if plant.UserID != user.ID {
+		if plant.UserID != user.User_id {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized access"})
 			return
 		}
@@ -243,7 +243,7 @@ func UpdatePlant() gin.HandlerFunc {
 
 		// Verify ownership
 		user := c.MustGet("user").(*models.User)
-		if existingPlant.UserID != user.ID {
+		if existingPlant.UserID != user.User_id {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized access"})
 			return
 		}
@@ -350,7 +350,7 @@ func DeletePlant() gin.HandlerFunc {
 
 		// Verify ownership
 		user := c.MustGet("user").(*models.User)
-		if plant.UserID != user.ID {
+		if plant.UserID != user.User_id {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized access"})
 			return
 		}
@@ -398,8 +398,8 @@ func AddGrowthRecord() gin.HandlerFunc {
 		}
 
 		// Verify ownership
-		userID, exists := c.Get("user_id")
-		if !exists || plant.UserID.Hex() != userID.(string) {
+		user := c.MustGet("user").(*models.User)
+		if plant.UserID != user.User_id {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized access"})
 			return
 		}
@@ -478,8 +478,8 @@ func UpdateGrowthRecord() gin.HandlerFunc {
 		}
 
 		// Verify ownership
-		userID, exists := c.Get("user_id")
-		if !exists || plant.UserID.Hex() != userID.(string) {
+		user := c.MustGet("user").(*models.User)
+		if plant.UserID != user.User_id {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized access"})
 			return
 		}
@@ -574,8 +574,8 @@ func DeleteGrowthRecord() gin.HandlerFunc {
 		}
 
 		// Verify ownership
-		userID, exists := c.Get("user_id")
-		if !exists || plant.UserID.Hex() != userID.(string) {
+		user := c.MustGet("user").(*models.User)
+		if plant.UserID != user.User_id {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized access"})
 			return
 		}

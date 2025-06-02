@@ -5,6 +5,7 @@ import (
 	"authentication/models"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -39,56 +40,87 @@ func CreateReminder() gin.HandlerFunc {
 			return
 		}
 
-		userObjID, err := primitive.ObjectIDFromHex(userID.(string))
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID format"})
-			return
-		}
-
 		// Get user's FCM token
 		var user models.User
-		err = userCollection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&user)
+		err := userCollection.FindOne(ctx, bson.M{"user_id": userID}).Decode(&user)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user data"})
 			return
 		}
 
-		if user.FCMToken == nil {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "User has not enabled notifications"})
+		// Validate reminder fields
+		if reminder.Type == "" || reminder.Frequency == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Missing type or frequency"})
+			return
+		}
+		if reminder.Frequency == "once" && reminder.ScheduledTime.IsZero() {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Missing scheduled time for one-time reminder"})
+			return
+		}
+		if (reminder.Frequency == "daily" || reminder.Frequency == "weekly") && reminder.TimeOfDay == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Missing time of day for daily/weekly reminder"})
+			return
+		}
+		if reminder.Frequency == "weekly" && reminder.DayOfWeek == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Missing day of week for weekly reminder"})
 			return
 		}
 
-		// Get plant details for notification
+		// ตรวจสอบสิทธิ์ user กับ plant
 		var plant models.Plant
 		err = plantCollection.FindOne(ctx, bson.M{"_id": reminder.PlantID}).Decode(&plant)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch plant data"})
 			return
 		}
+		// Debug log for userID and plant.UserID
+		fmt.Printf("[DEBUG] plant.UserID: %s, userID: %v\n", plant.UserID, userID)
+		userIDStr := ""
+		switch v := userID.(type) {
+		case string:
+			userIDStr = v
+		case primitive.ObjectID:
+			userIDStr = v.Hex()
+		default:
+			userIDStr = fmt.Sprintf("%v", v)
+		}
+		if plant.UserID != userIDStr {
+			fmt.Printf("[DEBUG] Ownership check failed: plant.UserID = %s, userIDStr = %s\n", plant.UserID, userIDStr)
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "You are not the owner of this plant"})
+			return
+		}
 
-		reminder.UserID = userObjID
+		// FCM Token check
+		if user.FCMToken == nil || *user.FCMToken == "" {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "User has not enabled notifications"})
+			return
+		}
+
+		// Timezone handling (set to Asia/Bangkok)
+		loc, _ := time.LoadLocation("Asia/Bangkok")
+		reminder.CreatedAt = time.Now().In(loc)
+		reminder.UpdatedAt = time.Now().In(loc)
+
+		// Set reminder ID BEFORE creating notification data
 		reminder.ID = primitive.NewObjectID()
-		reminder.CreatedAt = time.Now()
-		reminder.UpdatedAt = time.Now()
+		reminder.UserID = plant.UserID
 		reminder.IsActive = true
 
-		// Create reminder data for notification
+		// Create reminder data for notification (add title/body)
 		reminderData := map[string]interface{}{
 			"reminderId": reminder.ID.Hex(),
 			"plantId":    reminder.PlantID.Hex(),
 			"type":       reminder.Type,
 			"frequency":  reminder.Frequency,
 			"plantName":  plant.Name,
+			"title":      fmt.Sprintf("ถึงเวลาสำหรับ %s", reminder.Type),
+			"body":       fmt.Sprintf("อย่าลืม %s ให้กับ %s", reminder.Type, plant.Name),
 		}
-
-		// Convert reminder data to JSON string for notification
 		reminderJSON, err := json.Marshal(reminderData)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to prepare notification data"})
 			return
 		}
-
-		// Store reminder data in the reminder document
 		reminder.NotificationData = string(reminderJSON)
 
 		_, insertErr := reminderCollection.InsertOne(ctx, reminder)
@@ -101,7 +133,7 @@ func CreateReminder() gin.HandlerFunc {
 	}
 }
 
-// GetReminders handles fetching reminders for the authenticated user
+// GetReminders handles fetching reminders for the authenticated user, optionally filtered by plantId
 func GetReminders() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -113,13 +145,19 @@ func GetReminders() gin.HandlerFunc {
 			return
 		}
 
-		userObjID, err := primitive.ObjectIDFromHex(userID.(string))
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID format"})
-			return
+		filter := bson.M{"user_id": userID}
+
+		// Add plantId filter if provided
+		plantId := c.Query("plantId")
+		if plantId != "" {
+			plantObjID, err := primitive.ObjectIDFromHex(plantId)
+			if err != nil {
+				c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid plant ID"})
+				return
+			}
+			filter["plant_id"] = plantObjID
 		}
 
-		filter := bson.M{"user_id": userObjID}
 		cursor, err := reminderCollection.Find(ctx, filter)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch reminders"})
@@ -156,12 +194,6 @@ func UpdateReminder() gin.HandlerFunc {
 			return
 		}
 
-		userObjID, err := primitive.ObjectIDFromHex(userID.(string))
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID format"})
-			return
-		}
-
 		var updatedReminder models.Reminder
 		if err := c.BindJSON(&updatedReminder); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -169,7 +201,7 @@ func UpdateReminder() gin.HandlerFunc {
 		}
 
 		// Ensure the user owns the reminder
-		filter := bson.M{"_id": objID, "user_id": userObjID}
+		filter := bson.M{"_id": objID, "user_id": userID}
 
 		updateFields := bson.M{
 			"updated_at": time.Now(),
@@ -238,14 +270,8 @@ func DeleteReminder() gin.HandlerFunc {
 			return
 		}
 
-		userObjID, err := primitive.ObjectIDFromHex(userID.(string))
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Invalid user ID format"})
-			return
-		}
-
 		// Ensure the user owns the reminder before deleting
-		filter := bson.M{"_id": objID, "user_id": userObjID}
+		filter := bson.M{"_id": objID, "user_id": userID}
 
 		result, err := reminderCollection.DeleteOne(ctx, filter)
 		if err != nil {

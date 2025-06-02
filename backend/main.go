@@ -94,7 +94,7 @@ func main() {
 	// Initialize router
 	router := gin.Default()
 
-	// Configure CORS
+	// CORS middleware ต้องมาก่อนทุก route
 	router.Use(cors.New(cors.Config{
 		AllowOrigins:     []string{"http://localhost:3000"},
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"},

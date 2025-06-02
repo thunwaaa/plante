@@ -17,7 +17,7 @@ type GrowthRecord struct {
 
 type Plant struct {
 	ID            primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
-	UserID        primitive.ObjectID `bson:"user_id" json:"user_id"`
+	UserID        string             `bson:"user_id" json:"user_id"`
 	Name          string             `bson:"name" json:"name"`
 	Type          string             `bson:"type" json:"type"`
 	Container     string             `bson:"container" json:"container"`

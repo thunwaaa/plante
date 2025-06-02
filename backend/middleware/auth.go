@@ -11,6 +11,7 @@ import (
 
 	firebase "firebase.google.com/go/v4"
 	"firebase.google.com/go/v4/auth"
+	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -44,6 +45,11 @@ func NewAuthMiddleware(db *mongo.Database) (*AuthMiddleware, error) {
 
 func (m *AuthMiddleware) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		// ปล่อยผ่าน OPTIONS เพื่อให้ CORS middleware ทำงาน
+		if r.Method == "OPTIONS" {
+			next.ServeHTTP(w, r)
+			return
+		}
 		// Get token from Authorization header
 		authHeader := r.Header.Get("Authorization")
 		if authHeader == "" {
@@ -179,5 +185,122 @@ func (m *AuthMiddleware) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc 
 		ctx := context.WithValue(r.Context(), "user", &user)
 		ctx = context.WithValue(ctx, "user_id", user.User_id)
 		next.ServeHTTP(w, r.WithContext(ctx))
+	}
+}
+
+// Gin middleware version for authentication
+func (m *AuthMiddleware) GinAuthMiddleware() func(c *gin.Context) {
+	return func(c *gin.Context) {
+		if c.Request.Method == "OPTIONS" {
+			c.Next()
+			return
+		}
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.AbortWithStatusJSON(401, gin.H{"error": "Authorization header is required"})
+			return
+		}
+		tokenParts := strings.Split(authHeader, " ")
+		if len(tokenParts) != 2 || tokenParts[0] != "Bearer" {
+			c.AbortWithStatusJSON(401, gin.H{"error": "Invalid authorization header format"})
+			return
+		}
+		idToken := tokenParts[1]
+		token, err := m.client.VerifyIDToken(context.Background(), idToken)
+		if err != nil {
+			log.Printf("Error verifying token: %v", err)
+			c.AbortWithStatusJSON(401, gin.H{"error": "Invalid token"})
+			return
+		}
+		var user models.User
+		err = m.db.Collection("users").FindOne(context.Background(), bson.M{
+			"firebase_uid": token.UID,
+		}).Decode(&user)
+		if err != nil {
+			if err == mongo.ErrNoDocuments {
+				log.Printf("User not found for firebase_uid: %s, creating new user", token.UID)
+				firebaseUser, err := m.client.GetUser(context.Background(), token.UID)
+				if err != nil {
+					log.Printf("Error getting user from Firebase: %v", err)
+					c.AbortWithStatusJSON(401, gin.H{"error": "User not found"})
+					return
+				}
+				email := firebaseUser.Email
+				name := firebaseUser.DisplayName
+				username := firebaseUser.DisplayName
+				profileImageURL := firebaseUser.PhotoURL
+				newUser := models.User{
+					ID:              primitive.NewObjectID(),
+					User_id:         token.UID,
+					Email:           &email,
+					Name:            &name,
+					Username:        &username,
+					Role:            "user",
+					Provider:        "firebase",
+					IsVerified:      firebaseUser.EmailVerified,
+					FirebaseUID:     token.UID,
+					ProfileImageURL: &profileImageURL,
+					CreatedAt:       time.Now(),
+					UpdatedAt:       time.Now(),
+					LastLoginAt:     time.Now(),
+				}
+				_, err = m.db.Collection("users").InsertOne(context.Background(), newUser)
+				if err != nil {
+					log.Printf("Error creating new user: %v", err)
+					c.AbortWithStatusJSON(500, gin.H{"error": "Failed to create user"})
+					return
+				}
+				user = newUser
+			} else {
+				log.Printf("Error finding user: %v", err)
+				c.AbortWithStatusJSON(500, gin.H{"error": "Database error"})
+				return
+			}
+		} else if user.ID.IsZero() {
+			user.ID = primitive.NewObjectID()
+			_, err = m.db.Collection("users").UpdateOne(
+				context.Background(),
+				bson.M{"firebase_uid": token.UID},
+				bson.M{"$set": bson.M{
+					"_id":        user.ID,
+					"updated_at": time.Now(),
+				}},
+			)
+			if err != nil {
+				log.Printf("Error updating user ID: %v", err)
+			}
+		}
+		if user.ProfileImageURL == nil {
+			firebaseUser, err := m.client.GetUser(context.Background(), token.UID)
+			if err == nil && firebaseUser.PhotoURL != "" {
+				profileImageURL := firebaseUser.PhotoURL
+				user.ProfileImageURL = &profileImageURL
+				_, err = m.db.Collection("users").UpdateOne(
+					context.Background(),
+					bson.M{"firebase_uid": token.UID},
+					bson.M{"$set": bson.M{
+						"profile_image_url": profileImageURL,
+						"updated_at":        time.Now(),
+					}},
+				)
+				if err != nil {
+					log.Printf("Error updating user profile image: %v", err)
+				}
+			}
+		}
+		_, err = m.db.Collection("users").UpdateOne(
+			context.Background(),
+			bson.M{"firebase_uid": token.UID},
+			bson.M{"$set": bson.M{
+				"last_login_at": time.Now(),
+				"updated_at":    time.Now(),
+			}},
+		)
+		if err != nil {
+			log.Printf("Error updating last login: %v", err)
+		}
+		c.Set("user", &user)
+		c.Set("user_id", user.User_id)
+		c.Next()
 	}
 }
