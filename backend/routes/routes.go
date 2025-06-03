@@ -298,6 +298,7 @@ func SetupRoutes(router *gin.Engine, authService *services.AuthService) {
 			reminders.POST("/", controllers.CreateReminder())
 			reminders.POST("", controllers.CreateReminder())
 			reminders.GET("/", controllers.GetReminders())
+			reminders.GET("/plant/:plant_id", controllers.GetPlantReminders())
 			reminders.PUT("/:id", controllers.UpdateReminder())
 			reminders.DELETE("/:id", controllers.DeleteReminder())
 		}

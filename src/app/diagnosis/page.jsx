@@ -263,7 +263,7 @@ const TreeDiagnosisForm = () => {
             <div className='flex justify-center mt-4'>
             <button
                 onClick={handleSubmit}
-                className='bg-[#373E11] text-[#E6E4BB] font-bold py-2 px-4 rounded-xl hover:scale-105 transition'
+                className='bg-[#373E11] text-[#E6E4BB] font-bold py-2 px-4 rounded-xl hover:scale-105 transition my-2'
             >
                 วิเคราะห์อาการ
             </button>

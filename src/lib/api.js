@@ -1,12 +1,14 @@
-const API_URL = 'http://localhost:8080/api';
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8080";
 
 // Helper function to get auth token
 const getAuthToken = () => {
   try {
     const token = localStorage.getItem('token');
     if (!token) {
-      // If no token, redirect to login
+      // Store current URL before redirecting
       if (typeof window !== 'undefined') {
+        const currentPath = window.location.pathname + window.location.search;
+        localStorage.setItem('redirectAfterLogin', currentPath);
         window.location.href = '/login';
       }
       throw new Error('No authentication token found');
@@ -38,37 +40,67 @@ const uploadImage = async (file) => {
     throw new Error('No authentication token found');
   }
 
-  try {
-    console.log('Making upload request to:', `${API_URL}/plants/upload`);
-    const response = await fetch(`${API_URL}/plants/upload`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${token}`,
-      },
-      body: formData,
-      credentials: 'include',
-    });
+  const maxRetries = 3;
+  let retryCount = 0;
 
-    console.log('Upload response status:', response.status);
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('Upload failed:', {
-        status: response.status,
-        statusText: response.statusText,
-        error: errorData
+  while (retryCount < maxRetries) {
+    try {
+      console.log(`Attempt ${retryCount + 1} of ${maxRetries} to upload image`);
+      const response = await fetch(`${API_URL}/api/plants/upload`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+        body: formData,
+        credentials: 'include',
       });
-      throw new Error(errorData.error || `Upload failed: ${response.statusText}`);
-    }
 
-    const data = await response.json();
-    console.log('Upload successful:', data);
-    // Return the image URL directly from Cloudinary
-    return data.image_url;
-  } catch (error) {
-    console.error('Image upload error:', error);
-    throw error;
+      console.log('Upload response status:', response.status);
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        console.error('Upload failed:', {
+          status: response.status,
+          statusText: response.statusText,
+          error: errorData
+        });
+        
+        // If it's a server error (5xx) or connection error, retry
+        if (response.status >= 500 || response.status === 0) {
+          retryCount++;
+          if (retryCount < maxRetries) {
+            console.log(`Retrying upload in ${retryCount * 1000}ms...`);
+            await new Promise(resolve => setTimeout(resolve, retryCount * 1000));
+            continue;
+          }
+        }
+        throw new Error(errorData.error || `Upload failed: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('Upload successful:', data);
+      return data.image_url;
+    } catch (error) {
+      console.error(`Upload attempt ${retryCount + 1} failed:`, error);
+      
+      // If it's a connection error or network error, retry
+      if (error.name === 'TypeError' && error.message === 'Failed to fetch') {
+        retryCount++;
+        if (retryCount < maxRetries) {
+          console.log(`Retrying upload in ${retryCount * 1000}ms...`);
+          await new Promise(resolve => setTimeout(resolve, retryCount * 1000));
+          continue;
+        }
+      }
+      
+      // If we've exhausted retries or it's not a retryable error, throw
+      if (retryCount >= maxRetries - 1) {
+        throw new Error(`Failed to upload image after ${maxRetries} attempts: ${error.message}`);
+      }
+    }
   }
+
+  throw new Error(`Failed to upload image after ${maxRetries} attempts`);
 };
 
 // Helper function for API calls
@@ -98,10 +130,13 @@ const apiCall = async (endpoint, method = 'GET', data = null) => {
 
     // Handle 401 Unauthorized
     if (response.status === 401) {
-      // Clear invalid token
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+      // Store current URL before redirecting
       if (typeof window !== 'undefined') {
+        const currentPath = window.location.pathname + window.location.search;
+        localStorage.setItem('redirectAfterLogin', currentPath);
+        // Clear invalid token
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
         window.location.href = '/login';
       }
       throw new Error('Session expired. Please login again.');
@@ -129,7 +164,7 @@ export const plantApi = {
   // Get all plants for the current user
   getPlants: async () => {
     try {
-      const data = await apiCall('/plants/dashboard');
+      const data = await apiCall('/api/plants/dashboard');
       return Array.isArray(data) ? data : [];
     } catch (error) {
       console.error('Error getting plants:', error);
@@ -140,7 +175,7 @@ export const plantApi = {
   // Get a specific plant
   getPlant: async (plantId) => {
     try {
-      const data = await apiCall(`/plants/${plantId}`);
+      const data = await apiCall(`/api/plants/${plantId}`);
       return data;
     } catch (error) {
       console.error('Error getting plant:', error);
@@ -158,7 +193,7 @@ export const plantApi = {
       }
 
       // Create plant with image URL using apiCall helper
-      const data = await apiCall('/plants/new', 'POST', {
+      const data = await apiCall('/api/plants/new', 'POST', {
         ...plantData,
         image_url: imageUrl,
       });
@@ -180,7 +215,7 @@ export const plantApi = {
       }
 
       // Update plant with new image URL using apiCall helper
-      const data = await apiCall(`/plants/edit/${plantId}`, 'PUT', {
+      const data = await apiCall(`/api/plants/edit/${plantId}`, 'PUT', {
         ...plantData,
         image_url: imageUrl,
       });
@@ -195,7 +230,7 @@ export const plantApi = {
   // Delete a plant
   deletePlant: async (plantId) => {
     try {
-      const response = await apiCall(`/plants/${plantId}`, 'DELETE');
+      const response = await apiCall(`/api/plants/${plantId}`, 'DELETE');
       return response;
     } catch (error) {
       console.error('Error deleting plant:', error);
@@ -208,47 +243,13 @@ export const plantApi = {
     if (!file) {
       throw new Error('No file provided for upload');
     }
-
-    try {
-      const token = getAuthToken();
-      const formData = new FormData();
-      formData.append('image', file);
-
-      const response = await fetch(`${API_URL}/plants/upload`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
-        body: formData,
-        credentials: 'include',
-      });
-
-      if (response.status === 401) {
-        localStorage.removeItem('token');
-        if (typeof window !== 'undefined') {
-          window.location.href = '/login';
-        }
-        throw new Error('Session expired. Please login again.');
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
-        throw new Error(errorData.error || `Upload failed: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      // Return the image URL directly from Cloudinary
-      return data.image_url;
-    } catch (error) {
-      console.error('Image upload error:', error);
-      throw error;
-    }
+    return uploadImage(file);
   },
 
   // Add a growth record to a plant
   addGrowthRecord: async (plantId, growthData) => {
     try {
-      const data = await apiCall(`/plants/${plantId}/growth`, 'POST', growthData);
+      const data = await apiCall(`/api/plants/${plantId}/growth`, 'POST', growthData);
       return data;
     } catch (error) {
       console.error('Error adding growth record:', error);
@@ -259,7 +260,7 @@ export const plantApi = {
   // Update a growth record
   updateGrowthRecord: async (plantId, recordId, growthData) => {
     try {
-      const data = await apiCall(`/plants/${plantId}/growth/${recordId}`, 'PUT', growthData);
+      const data = await apiCall(`/api/plants/${plantId}/growth/${recordId}`, 'PUT', growthData);
       return data;
     } catch (error) {
       console.error('Error updating growth record:', error);
@@ -270,14 +271,11 @@ export const plantApi = {
   // Delete a growth record
   deleteGrowthRecord: async (plantId, recordId) => {
     try {
-      const data = await apiCall(`/plants/${plantId}/growth/${recordId}`, 'DELETE');
+      const data = await apiCall(`/api/plants/${plantId}/growth/${recordId}`, 'DELETE');
       return data;
     } catch (error) {
       console.error('Error deleting growth record:', error);
       throw error;
     }
   }
-};
-
-// Export API_URL for use in components
-export { API_URL }; 
+}; 

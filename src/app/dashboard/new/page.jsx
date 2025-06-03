@@ -3,6 +3,7 @@ import * as React from "react"
 import {useState, useEffect} from "react"
 import { useRouter } from 'next/navigation'
 import { plantApi } from '@/lib/api'
+import { toast } from 'sonner'
 import {
   Select,
   SelectContent,
@@ -12,14 +13,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import {
-    Form,
-    FormControl,
-    FormField,
-    FormItem,
-    FormLabel,
-    FormMessage,
-  } from '@/components/ui/form';
 import { Input } from '@/components/ui/input'
 import { format } from 'date-fns'
 import { Calendar1Icon } from 'lucide-react'
@@ -43,8 +36,61 @@ const page = () => {
   const [error, setError] = useState(null);
   const router = useRouter()
 
+  // Add function to get today's date
+  const getTodayDate = () => {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // Set to end of day
+    return today;
+  };
+
+  // Add function to validate date
+  const validateDate = (selectedDate) => {
+    const today = getTodayDate();
+    return selectedDate <= today;
+  };
+
+  // Modify date selection handler
+  const handleDateSelect = (selectedDate) => {
+    if (validateDate(selectedDate)) {
+      setDate(selectedDate);
+    }
+  };
+
+  const validateForm = () => {
+    if (!name.trim()) {
+      toast.error('กรุณากรอกชื่อต้นไม้');
+      return false;
+    }
+    if (!type) {
+      toast.error('กรุณาเลือกประเภทพืช');
+      return false;
+    }
+    if (!container) {
+      toast.error('กรุณาเลือกภาชนะที่ใช้ปลูก');
+      return false;
+    }
+    if (!plantHeight) {
+      toast.error('กรุณากรอกความสูงของต้นไม้');
+      return false;
+    }
+    if (isNaN(plantHeight) || parseFloat(plantHeight) <= 0) {
+      toast.error('ความสูงของต้นไม้ต้องเป็นจำนวนบวกเท่านั้น');
+      return false;
+    }
+    if (!date) {
+      toast.error('กรุณาเลือกวันที่ปลูก');
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault()
+    
+    if (!validateForm()) {
+      return;
+    }
+
     setLoading(true)
     setError(null)
 
@@ -57,7 +103,7 @@ const page = () => {
           imageUrl = await plantApi.uploadImage(imageFile);
         } catch (uploadErr) {
           console.error('Error uploading image:', uploadErr);
-          setError('ไม่สามารถอัพโหลดรูปภาพได้ กรุณาลองใหม่อีกครั้ง');
+          toast.error('ไม่สามารถอัพโหลดรูปภาพได้ กรุณาลองใหม่อีกครั้ง');
           setLoading(false);
           return;
         }
@@ -77,9 +123,10 @@ const page = () => {
       // Store the new plant data in localStorage to trigger refresh
       localStorage.setItem('lastUpdatedPlant', JSON.stringify(newPlant));
       
+      toast.success('เพิ่มข้อมูลต้นไม้สำเร็จ!');
       router.push('/dashboard');
     } catch (err) {
-      setError('ไม่สามารถบันทึกข้อมูลต้นไม้ได้ กรุณาลองใหม่อีกครั้ง');
+      toast.error('ไม่สามารถบันทึกข้อมูลต้นไม้ได้ กรุณาลองใหม่อีกครั้ง');
       console.error('Error creating plant:', err);
     } finally {
       setLoading(false);
@@ -180,9 +227,9 @@ const page = () => {
                   <Calendar
                     mode="single"
                     selected={date}
-                    onSelect={setDate}
+                    onSelect={handleDateSelect}
                     initialFocus
-                    disabled={loading}
+                    disabled={(date) => date > getTodayDate() || loading}
                   />
                 </PopoverContent>
               </Popover>
@@ -216,13 +263,18 @@ const page = () => {
               <input 
                 type="number"
                 value={plantHeight}
-                onChange={(e) => setPlantHeight(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === '' || (parseFloat(value) >= 0 && Number.isInteger(parseFloat(value)))) {
+                    setPlantHeight(value);
+                  }
+                }}
                 className='border rounded-2xl w-full p-1.5'
                 placeholder='กรอกความสูง'
                 required
                 disabled={loading}
                 min="0"
-                step="0.1"
+                step="1"
               />
             </div>
           </div>

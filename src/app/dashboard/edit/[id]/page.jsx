@@ -3,6 +3,7 @@ import * as React from "react"
 import {useState, useEffect} from "react"
 import { useRouter } from 'next/navigation'
 import { plantApi } from '@/lib/api'
+import { toast } from 'sonner'
 import {
   Select,
   SelectContent,
@@ -80,24 +81,73 @@ const EditPlantPage = ({ params }) => {
     }
   };
 
+  // Add function to get today's date
+  const getTodayDate = () => {
+    const today = new Date();
+    today.setHours(23, 59, 59, 999); // Set to end of day
+    return today;
+  };
+
+  // Add function to validate date
+  const validateDate = (selectedDate) => {
+    const today = getTodayDate();
+    return selectedDate <= today;
+  };
+
+  // Modify date selection handler
+  const handleDateSelect = (selectedDate) => {
+    if (validateDate(selectedDate)) {
+      setDate(selectedDate);
+    } else {
+      toast.error('ไม่สามารถเลือกวันที่ในอนาคตได้');
+    }
+  };
+
+  const validateForm = () => {
+    if (!name.trim()) {
+      toast.error('กรุณากรอกชื่อต้นไม้');
+      return false;
+    }
+    if (!type) {
+      toast.error('กรุณาเลือกประเภทพืช');
+      return false;
+    }
+    if (!container) {
+      toast.error('กรุณาเลือกภาชนะที่ใช้ปลูก');
+      return false;
+    }
+    if (!plantHeight) {
+      toast.error('กรุณากรอกความสูงของต้นไม้');
+      return false;
+    }
+    if (isNaN(plantHeight) || parseFloat(plantHeight) <= 0 || !Number.isInteger(parseFloat(plantHeight))) {
+      toast.error('ความสูงของต้นไม้ต้องเป็นจำนวนเต็มบวกเท่านั้น');
+      return false;
+    }
+    if (!date) {
+      toast.error('กรุณาเลือกวันที่ปลูก');
+      return false;
+    }
+    return true;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
     setSaving(true);
     setError(null);
 
     try {
-      // Validate required fields
-      if (!name || !type || !container || !plantHeight || !date) {
-        throw new Error('กรุณากรอกข้อมูลให้ครบถ้วน');
-      }
-
       const plantData = {
         name: name.trim(),
         type: type.trim(),
         container: container.trim(),
         plant_height: parseFloat(plantHeight),
         plant_date: date.toISOString(),
-        // Keep the existing image URL if no new image is uploaded
         image_url: currentImage
       };
 
@@ -114,10 +164,10 @@ const EditPlantPage = ({ params }) => {
       // Trigger a custom event to notify about the update
       window.dispatchEvent(new Event('plantUpdated'));
       
-      // Navigate back to dashboard
+      toast.success('แก้ไขข้อมูลต้นไม้สำเร็จ!');
       router.push('/dashboard');
     } catch (err) {
-      setError(err.message || 'ไม่สามารถบันทึกข้อมูลต้นไม้ได้ กรุณาลองใหม่อีกครั้ง');
+      toast.error(err.message || 'ไม่สามารถบันทึกข้อมูลต้นไม้ได้ กรุณาลองใหม่อีกครั้ง');
       console.error('Error updating plant:', err);
     } finally {
       setSaving(false);
@@ -242,9 +292,9 @@ const EditPlantPage = ({ params }) => {
                   <Calendar
                     mode="single"
                     selected={date}
-                    onSelect={setDate}
+                    onSelect={handleDateSelect}
                     initialFocus
-                    disabled={saving}
+                    disabled={(date) => date > getTodayDate() || saving}
                   />
                 </PopoverContent>
               </Popover>
@@ -278,13 +328,18 @@ const EditPlantPage = ({ params }) => {
               <input 
                 type="number"
                 value={plantHeight}
-                onChange={(e) => setPlantHeight(e.target.value)}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === '' || (parseFloat(value) >= 0 && Number.isInteger(parseFloat(value)))) {
+                    setPlantHeight(value);
+                  }
+                }}
                 className='border rounded-2xl w-full p-1.5'
                 placeholder='กรอกความสูง'
                 required
                 disabled={saving}
                 min="0"
-                step="0.1"
+                step="1"
               />
             </div>
           </div>

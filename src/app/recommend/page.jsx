@@ -61,7 +61,7 @@ const page = () => {
   return (
     <>
       <h1 className='text-3xl md:text-4xl font-bold text-center m-3 mt-8'>พืชที่เหมาะสมกับคุณ</h1>
-      <p className='text-center'>ค้นหาต้นไม้ที่เหมาะสมกับสภาพแวดล้อมและไลฟ์สไตล์ของคุณ</p>
+      <p className='text-center items-center'>ค้นหาต้นไม้ที่เหมาะสมกับสภาพแวดล้อมและไลฟ์สไตล์ของคุณ</p>
       
       {error && (
         <div className="text-center text-red-600 mt-4">
@@ -177,7 +177,7 @@ const page = () => {
         <button
             type="submit"
             disabled={loading}
-            className={`text-[#E6E4BB] bg-[#373E11] mx-auto rounded-2xl px-8 py-3 text-lg font-bold mt-8 hover:bg-[#454b28] transition-colors ${
+            className={`text-[#E6E4BB] bg-[#373E11] mx-auto rounded-2xl px-8 max-sm:px-5 max-sm:py-3 max-sm:text-sm py-3 text-lg font-bold mt-8 hover:bg-[#454b28] transition-colors ${
               loading ? 'opacity-50 cursor-not-allowed' : ''
             }`}
         >

@@ -233,7 +233,7 @@ const page = () => {
 
   return (
     <>
-      <h1 className='max-sm:text-3xl md:text-4xl lg:text-5xl font-extrabold flex justify-center mt-12'>ต้นไม้ของคุณ</h1>
+      <h1 className='sm:text-3xl md:text-4xl text-3xl  font-extrabold flex justify-center mt-12'>ต้นไม้ของคุณ</h1>
 
       { plants.length === 0 ? (
         <div className="flex justify-center mt-8">

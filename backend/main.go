@@ -61,6 +61,7 @@ func main() {
 	controllers.InitPlantCollection()
 	controllers.InitRecommendationCollection()
 	controllers.InitReminderCollection()
+	controllers.InitializeReminderService(db)
 
 	// Import plant data from JSON
 	if err := helpers.ImportPlantData(client); err != nil {

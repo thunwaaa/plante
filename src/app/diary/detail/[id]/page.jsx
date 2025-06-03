@@ -326,15 +326,15 @@ const DiaryDetailPage = () => {
                                     {/* Record content */}
                                     <div className="bg-[#E6E4BB] rounded-lg p-4 shadow border">
                                         <div className="flex justify-between items-start mb-2">
-                                            <div>
+                                            <div className='flex max-sm:flex-col text-center'>
                                                 <span className="font-medium text-[#373E11]">
                                                     ความสูง: {record.height} cm
                                                 </span>
-                                                <span className={`ml-2 px-2 py-1 rounded-full text-sm ${getMoodColor(record.mood)}`}>
+                                                <span className={`ml-2 px-2 py-1 rounded-full text-sm max-sm:mt-3 ${getMoodColor(record.mood)}`}>
                                                     {record.mood}
                                                 </span>
                                             </div>
-                                            <div className="flex items-center gap-2">
+                                            <div className="flex items-center gap-2 flex-wrap max-sm:flex-col">
                                                 <div className="text-sm text-gray-600">
                                                     {formatDate(record.date)}
                                                 </div>
@@ -397,10 +397,18 @@ const DiaryDetailPage = () => {
                                 <div>
                                     <label className="block text-sm font-medium mb-1 text-[#373E11]">ความสูง (cm)</label>
                                     <input
-                                        type="number"
-                                        step="0.1"
+                                        type="text"
+                                        inputMode="numeric"
+                                        pattern="^\d+$"
+                                        title="กรุณากรอกเลขเต็มบวกเท่านั้น"
                                         value={newGrowth.height}
-                                        onChange={(e) => setNewGrowth({ ...newGrowth, height: e.target.value })}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            // Allow only digits
+                                            if (/^\d*$/.test(value)) {
+                                                setNewGrowth({ ...newGrowth, height: value });
+                                            }
+                                        }}
                                         className="w-full border border-[#373E11] rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#373E11] focus:border-transparent"
                                         required
                                     />
@@ -476,10 +484,18 @@ const DiaryDetailPage = () => {
                                 <div>
                                     <label className="block text-sm font-medium mb-1 text-[#373E11]">ความสูง (cm)</label>
                                     <input
-                                        type="number"
-                                        step="0.1"
+                                        type="text"
+                                        inputMode="numeric"
+                                        pattern="^\d+$"
+                                        title="กรุณากรอกเลขเต็มบวกเท่านั้น"
                                         value={editingRecord.height}
-                                        onChange={(e) => setEditingRecord({ ...editingRecord, height: e.target.value })}
+                                        onChange={(e) => {
+                                            const value = e.target.value;
+                                            // Allow only digits
+                                            if (/^\d*$/.test(value)) {
+                                                setEditingRecord({ ...editingRecord, height: value });
+                                            }
+                                        }}
                                         className="w-full border border-[#373E11] rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#373E11] focus:border-transparent"
                                         required
                                     />
