@@ -3,9 +3,10 @@ package controllers
 import (
 	"authentication/config"
 	"authentication/models"
+	"authentication/services"
 	"context"
-	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"time"
 
@@ -16,9 +17,15 @@ import (
 )
 
 var reminderCollection *mongo.Collection
+var reminderService *services.ReminderService
 
 func InitReminderCollection() {
 	reminderCollection = config.OpenCollection("reminders")
+}
+
+// InitializeReminderService initializes the reminder service with the database connection
+func InitializeReminderService(db *mongo.Database) {
+	reminderService = services.NewReminderService(db)
 }
 
 // CreateReminder handles the creation of a new reminder
@@ -107,21 +114,28 @@ func CreateReminder() gin.HandlerFunc {
 		reminder.IsActive = true
 
 		// Create reminder data for notification (add title/body)
-		reminderData := map[string]interface{}{
-			"reminderId": reminder.ID.Hex(),
-			"plantId":    reminder.PlantID.Hex(),
-			"type":       reminder.Type,
-			"frequency":  reminder.Frequency,
-			"plantName":  plant.Name,
-			"title":      fmt.Sprintf("ถึงเวลาสำหรับ %s", reminder.Type),
-			"body":       fmt.Sprintf("อย่าลืม %s ให้กับ %s", reminder.Type, plant.Name),
-		}
-		reminderJSON, err := json.Marshal(reminderData)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to prepare notification data"})
-			return
-		}
-		reminder.NotificationData = string(reminderJSON)
+		// Frontend now sends notificationData as a JSON string
+		// We just need to ensure it's stored correctly.
+		// The NotificationData field is already part of the reminder struct
+
+		// Remove backend-side generation:
+		/*
+			reminderData := map[string]interface{}{
+				"reminderId": reminder.ID.Hex(),
+				"plantId":    reminder.PlantID.Hex(),
+				"type":       reminder.Type,
+				"frequency":  reminder.Frequency,
+				"plantName":  plant.Name,
+				"title":      fmt.Sprintf("ถึงเวลาสำหรับ %s", reminder.Type),
+				"body":       fmt.Sprintf("อย่าลืม %s ให้กับ %s!", reminder.Type, plant.Name),
+			}
+			reminderJSON, err := json.Marshal(reminderData)
+			if err != nil {
+				c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to prepare notification data"})
+				return
+			}
+			reminder.NotificationData = string(reminderJSON)
+		*/
 
 		_, insertErr := reminderCollection.InsertOne(ctx, reminder)
 		if insertErr != nil {
@@ -285,5 +299,52 @@ func DeleteReminder() gin.HandlerFunc {
 		}
 
 		c.JSON(http.StatusOK, gin.H{"message": "Reminder deleted successfully"})
+	}
+}
+
+// GetPlantReminders handles getting all reminders for a specific plant
+func GetPlantReminders() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		plantID := c.Param("plant_id")
+		log.Printf("[DEBUG] Getting reminders for plant ID: %s", plantID)
+
+		if plantID == "" {
+			log.Printf("[ERROR] Plant ID is empty")
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Plant ID is required"})
+			return
+		}
+
+		// Validate plant ID format
+		if _, err := primitive.ObjectIDFromHex(plantID); err != nil {
+			log.Printf("[ERROR] Invalid plant ID format: %v", err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid plant ID format"})
+			return
+		}
+
+		// Get reminders from database
+		log.Printf("[DEBUG] Fetching reminders from database for plant ID: %s", plantID)
+		reminders, err := reminderService.GetRemindersByPlantID(plantID)
+		if err != nil {
+			log.Printf("[ERROR] Error getting reminders for plant %s: %v", plantID, err)
+			// Check for specific error types
+			if err.Error() == "invalid plant ID format" {
+				c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+				return
+			}
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get reminders"})
+			return
+		}
+
+		log.Printf("[DEBUG] Successfully fetched %d reminders for plant %s", len(reminders), plantID)
+
+		// If no reminders found, return empty array instead of null
+		if reminders == nil {
+			reminders = []models.Reminder{}
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"reminders": reminders,
+			"count":     len(reminders),
+		})
 	}
 }

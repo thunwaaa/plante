@@ -29,6 +29,7 @@ import { X, Menu, ChevronUp, ChevronDown, LogOut, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 import { auth } from "@/lib/firebase";
 import { onAuthStateChanged } from "firebase/auth";
+import { initializeNotifications } from '@/lib/notification';
 
 const components = [
   { title: "แจ้งเตือนการรดน้ำ", href: "/reminder" },
@@ -105,6 +106,14 @@ export function NavBar() {
           
           // Store token
           localStorage.setItem("token", idToken);
+          
+          // Initialize notifications after successful login
+          try {
+            await initializeNotifications();
+            console.log("NavBar: Notifications initialized");
+          } catch (error) {
+            console.error("NavBar: Failed to initialize notifications:", error);
+          }
           
           // Fetch user profile
           const res = await fetch(`http://localhost:8080/api/profile`, {
@@ -223,7 +232,7 @@ export function NavBar() {
                 </NavigationMenuItem>
                 <NavigationMenuItem>
                   <Link 
-                    href="/" 
+                    href="/about" 
                     className={cn(navigationMenuTriggerStyle(), "text-xl")}
                   >
                     About
@@ -236,37 +245,13 @@ export function NavBar() {
           {/* Auth Buttons */}
           <div className="flex items-center gap-6">
             {isLoggedIn ? (
-              <Menubar>
-                <MenubarMenu>
-                  <MenubarTrigger className="p-0 focus:bg-transparent data-[state=open]:bg-transparent">
-                    <Avatar className="w-10 h-10 border-none">
-                      <AvatarImage 
-                        src={userProfile?.profile_image_url || userProfile?.photoURL || "/profile.jpg"} 
-                        alt={userProfile?.name || userProfile?.username || "User"}
-                      />
-                      <AvatarFallback>
-                        {userProfile?.name ? userProfile.name.charAt(0).toUpperCase() : 
-                         userProfile?.username ? userProfile.username.charAt(0).toUpperCase() : 'U'}
-                      </AvatarFallback>
-                    </Avatar>
-                  </MenubarTrigger>
-                  <MenubarContent className="mr-4 w-32 p-2">
-                    <MenubarItem asChild>
-                      <Link href="/profile" className="w-full flex justify-end hover:bg-[#373E11] hover:text-[#E6E4BB] transition-colors">
-                        Edit Profile
-                      </Link>
-                    </MenubarItem>
-                    <MenubarItem asChild>
-                      <button 
-                        onClick={handleLogout} 
-                        className="w-full flex justify-end text-right hover:bg-red-500 hover:text-white transition-colors rounded-md"
-                      >
-                        Log out
-                      </button>
-                    </MenubarItem>
-                  </MenubarContent>
-                </MenubarMenu>
-              </Menubar>
+              <button 
+                onClick={handleLogout} 
+                className="items-center gap-2 w-full py-2 px-4 flex justify-end text-right hover:bg-red-700 hover:text-white transition-colors rounded-md bg-[#373E11] text-[#E6E4BB]"
+              >
+                <LogOut size={20}/>
+                Log out
+              </button>
             ) : (
               <div className="flex gap-4">
                 <Link href="/login" className="px-4 py-2 text-[#373E11] hover:text-[#454b28] transition-colors border rounded-lg">

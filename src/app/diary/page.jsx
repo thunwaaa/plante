@@ -48,7 +48,7 @@ const DiaryPage = () => {
     return (
         <>
             <div className='flex justify-center'>
-                <h1 className='font-extrabold text-3xl md:text-4xl mt-8'>สมุดจดบันทึกต้นไม้</h1>
+                <h1 className='font-extrabold text-3xl md:text-4xl mt-8 text-center'>สมุดจดบันทึกต้นไม้</h1>
             </div>
 
             <div className="flex flex-wrap justify-center mx-3">

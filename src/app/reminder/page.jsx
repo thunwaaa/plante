@@ -48,7 +48,7 @@ const ReminderPage = () => {
     return (
         <>
             <div className='flex justify-center'>
-                <h1 className='font-extrabold text-3xl md:text-4xl mt-8'>สร้างการแจ้งเตือนของคุณ</h1>
+                <h1 className='font-extrabold text-3xl md:text-4xl mt-8 max-sm:text-2xl text-center'>สร้างการแจ้งเตือนของคุณ</h1>
             </div>
 
             <div className="flex flex-wrap justify-center mx-3">
@@ -83,7 +83,7 @@ const ReminderPage = () => {
                                 onClick={() => handleReminder(plant._id)} 
                                 className="border hover:bg-[#373E11] mr-4 p-2 rounded-lg text-[#E6E4BB] bg-[#4f5c03] transition-colors duration-200"
                             >
-                                สร้างการแจ้งเตือน
+                                บันทึกการแจ้งเตือน
                             </button>
                         </div>
                     </div>

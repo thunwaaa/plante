@@ -18,6 +18,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Icons } from "@/components/icons";
+import { Eye, EyeOff } from "lucide-react";
 
 export default function SignupPage() {
   const router = useRouter();
@@ -26,6 +27,7 @@ export default function SignupPage() {
   const [username, setUsername] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleEmailSignup = async (e) => {
     e.preventDefault();
@@ -183,15 +185,24 @@ export default function SignupPage() {
               placeholder='Enter your Email'
             />
             <label htmlFor="signup-password" className='font-bold'>Password</label>
-            <input 
-              id='signup-password'
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder='Enter your Password'
-              className='border border-[#373E11] rounded-lg h-12 p-2 text-base' 
-            />
+            <div className="relative">
+              <input 
+                id='signup-password'
+                type={showPassword ? "text" : "password"}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder='Enter your Password'
+                className='border border-[#373E11] rounded-lg h-12 p-2 text-base w-full pr-10' 
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
             <Button type="submit" disabled={isLoading} className="border my-4 bg-[#373E11] text-[#E6E4BB] hover:bg-[#434726]">
                 {isLoading && (
                   <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
@@ -283,16 +294,25 @@ export default function SignupPage() {
                 className='border border-[#373E11] rounded-lg h-12 p-2 text-lg'
                 placeholder='Enter your Email'
               />
-              <label htmlFor="signup-password" className="text-xl">Password</label>
-              <input 
-                id='signup-password'
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder='Enter your Password'
-                className='border border-[#373E11] rounded-lg h-12 p-2 text-lg' 
-              />
+              <label htmlFor="signup-password-mobile" className="text-xl">Password</label>
+              <div className="relative">
+                <input 
+                  id='signup-password-mobile'
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder='Enter your Password'
+                  className='border border-[#373E11] rounded-lg h-12 p-2 text-base w-full pr-10' 
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
               <Button type="submit" disabled={isLoading} className="border mt-4 mb-6 bg-[#373E11] text-[#E6E4BB] hover:bg-[#434726]">
                 {isLoading && (
                   <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />

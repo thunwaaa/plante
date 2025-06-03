@@ -18,7 +18,7 @@ func NewScheduler(notificationService *NotificationService) *Scheduler {
 }
 
 func (s *Scheduler) Start() {
-	ticker := time.NewTicker(1 * time.Minute)
+	ticker := time.NewTicker(5 * time.Second)
 	go func() {
 		for {
 			select {

@@ -12,6 +12,8 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Icons } from "@/components/icons";
+import { Eye, EyeOff } from "lucide-react";
+import toast, { Toaster } from 'react-hot-toast';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -19,6 +21,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleEmailLogin = async (e) => {
     e.preventDefault();
@@ -59,13 +62,73 @@ export default function LoginPage() {
         throw new Error("Failed to store authentication token");
       }
 
-      router.push("/dashboard");
+      // Show success toast
+      toast.success('เข้าสู่ระบบสำเร็จ!', {
+        duration: 2000,
+        position: 'top-center',
+        style: {
+          background: '#373E11',
+          color: '#E6E4BB',
+        },
+      });
+
+      // Check if there's a redirect path stored
+      const redirectPath = localStorage.getItem("redirectAfterLogin");
+      if (redirectPath) {
+        localStorage.removeItem("redirectAfterLogin"); // Clear the stored path
+        router.push(redirectPath);
+      } else {
+        router.push("/dashboard");
+      }
     } catch (error) {
       console.error("Login error:", error);
-      setError(error.message);
       // Clear any partial data
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+
+      // Show error toast based on error type
+      if (error.code === "auth/invalid-credential") {
+        toast.error('อีเมลหรือรหัสผ่านไม่ถูกต้อง', {
+          duration: 4000,
+          position: 'top-center',
+          style: {
+            background: '#FEE2E2',
+            color: '#991B1B',
+            border: '1px solid #FCA5A5',
+          },
+        });
+      } else if (error.code === "auth/user-not-found") {
+        toast.error('ไม่พบผู้ใช้ที่ใช้อีเมลนี้', {
+          duration: 4000,
+          position: 'top-center',
+          style: {
+            background: '#FEE2E2',
+            color: '#991B1B',
+            border: '1px solid #FCA5A5',
+          },
+        });
+      } else if (error.code === "auth/too-many-requests") {
+        toast.error('มีการพยายามเข้าสู่ระบบมากเกินไป กรุณารอสักครู่แล้วลองใหม่', {
+          duration: 4000,
+          position: 'top-center',
+          style: {
+            background: '#FEE2E2',
+            color: '#991B1B',
+            border: '1px solid #FCA5A5',
+          },
+        });
+      } else {
+        toast.error('เกิดข้อผิดพลาด กรุณาลองใหม่อีกครั้ง', {
+          duration: 4000,
+          position: 'top-center',
+          style: {
+            background: '#FEE2E2',
+            color: '#991B1B',
+            border: '1px solid #FCA5A5',
+          },
+        });
+      }
+      setError(error.message);
     } finally {
       setIsLoading(false);
     }
@@ -109,7 +172,14 @@ export default function LoginPage() {
         throw new Error("Failed to store authentication token");
       }
 
-      router.push("/dashboard");
+      // Check if there's a redirect path stored
+      const redirectPath = localStorage.getItem("redirectAfterLogin");
+      if (redirectPath) {
+        localStorage.removeItem("redirectAfterLogin"); // Clear the stored path
+        router.push(redirectPath);
+      } else {
+        router.push("/dashboard");
+      }
     } catch (error) {
       console.error("Google login error:", error);
       setError(error.message);
@@ -123,6 +193,7 @@ export default function LoginPage() {
 
   return (
     <>
+      <Toaster />
       {/* Web Sign in - Shows only on lg screens and above */}
       <div className="flex min-h-screen justify-between max-lg:hidden">
         {/* Left panel with sign-up CTA */}
@@ -142,7 +213,6 @@ export default function LoginPage() {
         <div className='flex flex-col justify-center items-center self-center w-1/2'>
           <h1 className="text-4xl font-bold underline mb-3">Login</h1>
           <p className="mt-3">Enter your email to sign in to your account</p>
-          {error && <p className="text-red-500 mb-4">{error}</p>}
           <form onSubmit={handleEmailLogin} className='flex flex-col text-2xl space-y-3 w-3/4 max-w-md mt-4'>
             <label htmlFor="email-desktop">Email</label>
             <input 
@@ -155,15 +225,24 @@ export default function LoginPage() {
               placeholder='Enter your Email'
             />
             <label htmlFor="login-password-desktop">Password</label>
-            <input 
-              id='login-password-desktop'
-              type="password"
-              required
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder='Enter your Password'
-              className='border border-[#373E11] rounded-lg h-12 p-2 text-base' 
-            />
+            <div className="relative">
+              <input 
+                id='login-password-desktop'
+                type={showPassword ? "text" : "password"}
+                required
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder='Enter your Password'
+                className='border border-[#373E11] rounded-lg h-12 p-2 text-base w-full pr-10' 
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+              >
+                {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+              </button>
+            </div>
             <Button type="submit" disabled={isLoading} className="border my-4 bg-[#373E11] text-[#E6E4BB] hover:bg-[#434726]">
                 {isLoading && (
                   <Icons.spinner className="mr-2 h-4 w-4 animate-spin" />
@@ -238,16 +317,25 @@ export default function LoginPage() {
                 className='border border-[#373E11] rounded-lg h-12 p-2 text-lg'
                 placeholder='Enter your Email'
               />
-              <label htmlFor="login-password-mobile">Password</label>
-              <input 
-                id='login-password-mobile'
-                type="password"
-                required
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder='Enter your Password'
-                className='border border-[#373E11] rounded-lg h-12 p-2 text-lg' 
-              />
+              <label htmlFor="password" className="text-xl">Password</label>
+              <div className="relative">
+                <input 
+                  id='password'
+                  type={showPassword ? "text" : "password"}
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder='Enter your Password'
+                  className='border border-[#373E11] rounded-lg h-12 p-2 text-base w-full pr-10' 
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                >
+                  {showPassword ? <EyeOff size={20} /> : <Eye size={20} />}
+                </button>
+              </div>
 
               <Button type="submit" disabled={isLoading} className="border my-4 bg-[#373E11] text-[#E6E4BB] hover:bg-[#434726]">
                 {isLoading && (

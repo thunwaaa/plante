@@ -1,7 +1,7 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { API_URL } from "@/lib/api";
+import { API_URL, plantApi } from "@/lib/api";
 import { toast } from "sonner";
 import { Loader2, Droplet, Sprout } from "lucide-react";
 import {
@@ -31,6 +31,8 @@ const AddReminderPage = () => {
   });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState(null);
+  const [plantName, setPlantName] = useState("");
+  const [loadingPlant, setLoadingPlant] = useState(true);
 
   function isValidObjectId(id) {
     return typeof id === "string" && id.length === 24 && /^[a-fA-F0-9]{24}$/.test(id);
@@ -49,10 +51,96 @@ const AddReminderPage = () => {
     setReminderData((prevData) => ({ ...prevData, timeOfDay: e.target.value }));
   };
 
+  const generateNotificationContent = (type, frequency, plantName) => {
+    let title = '';
+    let body = '';
+
+    switch (type) {
+        case 'watering':
+            title = `🪴 ถึงเวลารดน้ำ ${plantName} แล้ว!`;
+            body = frequency === 'once'
+                ? 'ถึงเวลาที่กำหนดไว้สำหรับการรดน้ำแล้ว'
+                : frequency === 'daily'
+                ? 'ถึงเวลารดน้ำประจำวันแล้ว'
+                : 'ถึงเวลารดน้ำประจำสัปดาห์แล้ว';
+            break;
+        case 'fertilizing':
+            title = `🌱 ถึงเวลาใส่ปุ๋ย ${plantName} แล้ว!`;
+            body = frequency === 'once'
+                ? 'ถึงเวลาที่กำหนดไว้สำหรับการใส่ปุ๋ยแล้ว'
+                : frequency === 'daily'
+                ? 'ถึงเวลาใส่ปุ๋ยประจำวันแล้ว'
+                : 'ถึงเวลาใส่ปุ๋ยประจำสัปดาห์แล้ว';
+            break;
+        default:
+            title = `🔔 การแจ้งเตือนสำหรับ ${plantName}`;
+            body = 'ถึงเวลาดูแลต้นไม้ของคุณแล้ว';
+    }
+    return { title, body };
+  };
+
+  useEffect(() => {
+    const fetchPlant = async () => {
+      if (!plantId || !isValidObjectId(plantId)) {
+        setError("Plant ID is missing or invalid.");
+        setLoadingPlant(false);
+        return;
+      }
+      try {
+        setLoadingPlant(true);
+        const data = await plantApi.getPlant(plantId);
+        if (data && data.name) {
+          setPlantName(data.name);
+        } else {
+          setError("Could not fetch plant data.");
+        }
+      } catch (err) {
+        console.error("Error fetching plant:", err);
+        setError("Failed to load plant data.");
+      } finally {
+        setLoadingPlant(false);
+      }
+    };
+
+    fetchPlant();
+  }, [plantId]); // Rerun effect if plantId changes
+
+  // Add function to get today's date in YYYY-MM-DD format
+  const getTodayDate = () => {
+    const today = new Date();
+    const year = today.getFullYear();
+    const month = String(today.getMonth() + 1).padStart(2, '0');
+    const day = String(today.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  // Add function to validate date and time
+  const validateDateTime = (date, time) => {
+    const selectedDateTime = new Date(`${date}T${time}`);
+    const now = new Date();
+    
+    // If selected date is today, check if time is in the future
+    if (date === getTodayDate()) {
+      return selectedDateTime > now;
+    }
+    
+    // For future dates, just check if date is valid
+    return selectedDateTime > now;
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsSubmitting(true);
     setError(null);
+
+    // Add date validation
+    if (reminderData.frequency === "once") {
+      if (!validateDateTime(reminderData.scheduledDate, reminderData.scheduledTime)) {
+        toast.error("กรุณาเลือกวันที่และเวลาในอนาคตเท่านั้น");
+        setIsSubmitting(false);
+        return;
+      }
+    }
 
     // Ensure notification permission and FCM token
     try {
@@ -101,6 +189,18 @@ const AddReminderPage = () => {
         router.push("/login");
         return;
       }
+      const { title, body } = generateNotificationContent(reminderData.type, reminderData.frequency, plantName);
+
+      const notificationData = {
+          reminderId: "", // This will be populated by backend after saving
+          plantId: plantId,
+          type: reminderData.type,
+          frequency: reminderData.frequency,
+          plantName: plantName,
+          title: title,
+          body: body,
+      };
+
       const reminderPayload = {
         plantId: plantId,
         type: reminderData.type,
@@ -115,12 +215,13 @@ const AddReminderPage = () => {
           reminderData.frequency === "daily" || reminderData.frequency === "weekly"
             ? reminderData.timeOfDay
             : undefined,
+        notificationData: JSON.stringify(notificationData), // Add notification data as a JSON string
       };
       Object.keys(reminderPayload).forEach(
         (key) => reminderPayload[key] === undefined && delete reminderPayload[key]
       );
       console.log("[DEBUG] reminderPayload", reminderPayload);
-      const res = await fetch(`${API_URL}/reminders/`, {
+      const res = await fetch(`${API_URL}/api/reminders/`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -223,6 +324,7 @@ const AddReminderPage = () => {
               name="scheduledDate"
               value={reminderData.scheduledDate}
               onChange={handleInputChange}
+              min={getTodayDate()}
               className="mt-1 block w-full pl-3 pr-3 py-2 text-base border focus:outline-none focus:ring-[#373E11] focus:border-[#373E11] sm:text-sm rounded-md"
               required
             />
@@ -235,6 +337,11 @@ const AddReminderPage = () => {
               className="mt-1 block w-full pl-3 pr-3 py-2 text-base border focus:outline-none focus:ring-[#373E11] focus:border-[#373E11] sm:text-sm rounded-md"
               required
             />
+            {reminderData.scheduledDate === getTodayDate() && (
+              <p className="text-sm text-gray-600 mt-1">
+                สำหรับวันนี้ กรุณาเลือกเวลาในอนาคตเท่านั้น
+              </p>
+            )}
           </div>
         )}
         {reminderData.frequency === "weekly" && (
@@ -281,7 +388,7 @@ const AddReminderPage = () => {
         <button
           type="submit"
           className="w-full bg-[#373E11] text-[#E6E4BB] p-3 rounded-md font-medium hover:bg-[#454b28] transition-colors flex items-center justify-center"
-          disabled={isSubmitting}
+          disabled={isSubmitting || loadingPlant || !plantName}
         >
           {isSubmitting ? (
             <Loader2 className="mr-2 h-5 w-5 animate-spin" />

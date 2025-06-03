@@ -2,7 +2,15 @@ import app from './firebase';
 import { getMessaging, getToken, onMessage } from 'firebase/messaging';
 import { API_URL } from './api';
 
-const messaging = getMessaging(app);
+// Initialize messaging only on client side
+let messaging = null;
+if (typeof window !== 'undefined') {
+  try {
+    messaging = getMessaging(app);
+  } catch (error) {
+    console.error('Error initializing Firebase Messaging:', error);
+  }
+}
 
 // Helper function to format notification message
 const formatNotificationMessage = (reminder) => {
@@ -36,6 +44,11 @@ const formatNotificationMessage = (reminder) => {
 };
 
 export const requestNotificationPermission = async () => {
+    if (typeof window === 'undefined' || !messaging) {
+        console.warn('Firebase Messaging is not available');
+        return null;
+    }
+
     try {
         const permission = await Notification.requestPermission();
         if (permission === 'granted') {
@@ -43,8 +56,12 @@ export const requestNotificationPermission = async () => {
                 vapidKey: process.env.NEXT_PUBLIC_FIREBASE_VAPID_KEY,
             });
             
+            if (!token) {
+                throw new Error('Failed to get FCM token');
+            }
+
             // Save token to backend
-            const response = await fetch(`${API_URL}/users/fcm-token`, {
+            const response = await fetch(`${API_URL}/api/users/fcm-token`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -54,67 +71,109 @@ export const requestNotificationPermission = async () => {
             });
 
             if (!response.ok) {
-                throw new Error('Failed to save FCM token');
+                throw new Error('Failed to save FCM token to backend');
             }
 
+            console.log('FCM token saved successfully');
             return token;
         } else {
-            throw new Error('Notification permission denied');
+            console.warn('Notification permission denied');
+            return null;
         }
     } catch (error) {
-        console.error('Error requesting notification permission:', error);
-        throw error;
+        console.error('Error in requestNotificationPermission:', error);
+        return null;
     }
 };
 
-export const onMessageListener = () =>
-    new Promise((resolve) => {
-        onMessage(messaging, (payload) => {
-            // Handle both reminder notifications and other notifications
-            const { notification, data } = payload;
-            
-            if (data && data.reminder) {
-                let reminder = null;
-                try {
-                    reminder = typeof data.reminder === 'string' ? JSON.parse(data.reminder) : data.reminder;
-                } catch (e) {
-                    console.error('Invalid reminder JSON:', data.reminder, e);
-                    return; // Skip further processing if JSON is invalid
-                }
-                const { title, body } = formatNotificationMessage(reminder);
+export const onMessageListener = () => {
+    if (typeof window === 'undefined' || !messaging) {
+        console.warn('Firebase Messaging is not available');
+        return Promise.resolve(null);
+    }
+
+    return new Promise((resolve) => {
+        try {
+            onMessage(messaging, (payload) => {
+                console.log('Received foreground message:', payload);
                 
-                new Notification(title, {
-                    body,
-                    icon: '/plantelogo.svg',
-                    badge: '/plantelogo.svg',
-                    tag: `reminder-${reminder.plantId}`,
-                    requireInteraction: true,
-                    actions: [
-                        {
-                            action: 'view',
-                            title: 'ดูรายละเอียด'
-                        },
-                        {
-                            action: 'dismiss',
-                            title: 'ปิด'
-                        }
-                    ]
-                });
-            } else if (notification) {
-                // Handle regular notifications
-                new Notification(notification.title, {
-                    body: notification.body,
-                    icon: '/plantelogo.svg',
-                    badge: '/plantelogo.svg'
-                });
-            }
-            
-            resolve(payload);
-        });
-});
+                // Handle both reminder notifications and other notifications
+                const { notification, data } = payload;
+                
+                if (data && data.reminder) {
+                    let reminder = null;
+                    try {
+                        reminder = typeof data.reminder === 'string' ? JSON.parse(data.reminder) : data.reminder;
+                    } catch (e) {
+                        console.error('Invalid reminder JSON:', data.reminder, e);
+                        return;
+                    }
+
+                    const { title, body } = formatNotificationMessage(reminder);
+                    
+                    // Create notification
+                    const notificationOptions = {
+                        body,
+                        icon: '/plantelogo.svg',
+                        badge: '/plantelogo.svg',
+                        tag: `reminder-${reminder.plantId}`,
+                        requireInteraction: true,
+                        actions: [
+                            {
+                                action: 'view',
+                                title: 'ดูรายละเอียด'
+                            },
+                            {
+                                action: 'dismiss',
+                                title: 'ปิด'
+                            }
+                        ]
+                    };
+
+                    try {
+                        const notification = new Notification(title, notificationOptions);
+                        console.log('Notification created successfully');
+                        
+                        // Handle notification click
+                        notification.onclick = (event) => {
+                            event.preventDefault();
+                            if (event.action === 'view') {
+                                window.location.href = `/reminder/detail/${reminder.plantId}`;
+                            }
+                            notification.close();
+                        };
+                    } catch (error) {
+                        console.error('Error creating notification:', error);
+                    }
+                } else if (notification) {
+                    // Handle regular notifications
+                    try {
+                        new Notification(notification.title, {
+                            body: notification.body,
+                            icon: '/plantelogo.svg',
+                            badge: '/plantelogo.svg'
+                        });
+                    } catch (error) {
+                        console.error('Error creating regular notification:', error);
+                    }
+                }
+                
+                resolve(payload);
+            });
+        } catch (error) {
+            console.error('Error setting up message listener:', error);
+            resolve(null);
+        }
+    });
+};
 
 // Initialize notification handling
 export const initializeNotifications = async () => {
+    if (typeof window === 'undefined') {
+        console.log('Skipping notification initialization on server side');
+        return;
+    }
+
     try {
         // Check if the browser supports notifications
         if (!('Notification' in window)) {
@@ -124,24 +183,21 @@ export const initializeNotifications = async () => {
 
         // Check if permission is already granted
         if (Notification.permission === 'granted') {
-            await requestNotificationPermission();
+            const token = await requestNotificationPermission();
+            if (token) {
+                console.log('Notifications initialized successfully');
+            }
+        } else if (Notification.permission !== 'denied') {
+            // If permission is not denied, request it
+            const token = await requestNotificationPermission();
+            if (token) {
+                console.log('Notifications initialized successfully after permission request');
+            }
         }
         
         // Handle foreground messages
-        onMessageListener().then((payload) => {
-            // Handle notification click
-            if (payload.data && payload.data.reminder) {
-                const reminder = JSON.parse(payload.data.reminder);
-                // You can add custom click handling here
-                // For example, navigate to the plant detail page
-                if (typeof window !== 'undefined') {
-                    window.addEventListener('click', (e) => {
-                        if (e.target.tagName === 'BUTTON' && e.target.getAttribute('data-action') === 'view') {
-                            window.location.href = `/reminder/detail/${reminder.plantId}`;
-                        }
-                    });
-                }
-            }
+        onMessageListener().catch(error => {
+            console.error('Error in message listener:', error);
         });
     } catch (error) {
         console.error('Failed to initialize notifications:', error);

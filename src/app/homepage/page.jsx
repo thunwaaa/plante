@@ -24,7 +24,7 @@ export default function Home() {
     </div> */}
       <div className="border-b h-auto">
         <div className="flex justify-between m-4">
-          <p className="text-5xl lg:text-6xl max-md:text-2xl max-sm:text-lg max-sm:m-2 mx-5 my-9 lg:my-16 lg:mx-10">LET US HELP YOU <br /> TAKE CARE <br /> YOUR PLANT</p>
+          <p className="text-5xl max-md:text-2xl max-sm:text-lg max-sm:m-2 mx-5 my-9 lg:my-16 lg:mx-10">LET US HELP YOU <br /> TAKE CARE <br /> YOUR PLANT</p>
           <Image 
             src="/function1.svg" 
             alt="f1" 
@@ -36,7 +36,7 @@ export default function Home() {
         </div>
         <Link 
           href="/signup"
-          className="max-md:h-7 max-md:w-[200] lg:w-[436px] lg:h-14 lg:rounded-4xl w-96 h-12 rounded-3xl bg-[#373E11] text-[#E6E4BB] lg:text-2xl
+          className="max-md:h-12 max-md:w-80 lg:w-[436px] lg:h-14 lg:rounded-4xl w-96 h-12 rounded-3xl bg-[#373E11] text-[#E6E4BB] lg:text-2xl
           md:text-xl max-sm:text-[11px] flex items-center justify-center mx-4 md:mx-8 lg:mx-16 mb-8 max-sm:mt-[-56] md:mt-[-44] lg:mt-[-100] lg:mb-24
           transition duration-300 ease-in-out hover:-translate-y-1 hover:scale-110"
         >
@@ -61,7 +61,7 @@ export default function Home() {
         <div className="flex justify-end">
           <Link 
             href="/signup"
-            className="max-md:h-7 max-md:w-[256] md:w-[450] lg:w-[548px] lg:h-14 lg:rounded-4xl w-96 h-12 rounded-3xl bg-[#E6E4BB] text-[#373E11] lg:text-2xl
+            className="max-md:h-12 max-md:w-96 md:w-[450] lg:w-[548px] lg:h-14 lg:rounded-4xl w-96 h-12 rounded-3xl bg-[#E6E4BB] text-[#373E11] lg:text-2xl
             md:text-xl max-sm:text-[11px] flex flex-row-reverse items-center justify-center mx-4 md:mx-8 lg:mx-16 mb-8 
             max-sm:mt-[-72] md:mt-[-80] md:mb-12 lg:mt-[-180] lg:mb-36 transition duration-300 ease-in-out hover:-translate-y-1 hover:scale-110"
           >
@@ -86,7 +86,7 @@ export default function Home() {
         </div>
         <Link 
           href="/signup"
-          className="max-md:h-7 max-md:w-[228] md:w-[432] lg:w-[524px] lg:h-14 lg:rounded-4xl w-96 h-12 rounded-3xl bg-[#373E11] text-[#E6E4BB] lg:text-2xl
+          className="max-md:h-12 max-md:w-96 md:w-[432] lg:w-[524px] lg:h-14 lg:rounded-4xl w-96 h-12 rounded-3xl bg-[#373E11] text-[#E6E4BB] lg:text-2xl
           md:text-xl max-sm:text-[11px] flex items-center justify-center mx-4 md:mx-8 lg:mx-16 mb-8 
           max-sm:mt-[-62] max-sm:mb-14 md:mt-[-80] md:mb-18 lg:mt-[-236] lg:mb-36 transition duration-300 ease-in-out hover:-translate-y-1 hover:scale-110"
         >
@@ -111,7 +111,7 @@ export default function Home() {
         <div className="flex justify-end">
           <Link 
             href="/signup"
-            className="max-md:h-7 max-md:w-[228] md:w-[412] lg:w-[500px] lg:h-14 lg:rounded-4xl w-96 h-12 rounded-3xl bg-[#E6E4BB] text-[#373E11] lg:text-2xl
+            className="max-md:h-12 max-md:w-96 md:w-[412] lg:w-[500px] lg:h-14 lg:rounded-4xl w-96 h-12 rounded-3xl bg-[#E6E4BB] text-[#373E11] lg:text-2xl
             md:text-xl max-sm:text-[11px] flex flex-row-reverse items-center justify-center mx-4 md:mx-8 lg:mx-16 mb-8 
             max-sm:mt-[-72] md:mt-[-80] md:mb-12 lg:mt-[-180] lg:mb-36 transition duration-300 ease-in-out hover:-translate-y-1 hover:scale-110"
           >

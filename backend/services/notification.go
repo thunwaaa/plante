@@ -16,8 +16,9 @@ import (
 )
 
 type NotificationService struct {
-	db     *mongo.Database
-	client *messaging.Client
+	db                    *mongo.Database
+	client                *messaging.Client
+	lastNotificationTimes map[string]time.Time
 }
 
 func NewNotificationService(db *mongo.Database) (*NotificationService, error) {
@@ -35,8 +36,9 @@ func NewNotificationService(db *mongo.Database) (*NotificationService, error) {
 	}
 
 	return &NotificationService{
-		db:     db,
-		client: client,
+		db:                    db,
+		client:                client,
+		lastNotificationTimes: make(map[string]time.Time),
 	}, nil
 }
 
@@ -92,85 +94,130 @@ func (s *NotificationService) CheckAndSendReminders() error {
 		return fmt.Errorf("error decoding reminders: %v", err)
 	}
 
+	log.Printf("[DEBUG] Found %d active reminders", len(reminders))
+
 	for _, reminder := range reminders {
+		log.Printf("[DEBUG] Processing reminder: ID=%s, Type=%s, Frequency=%s, ScheduledTime=%v",
+			reminder.ID.Hex(), reminder.Type, reminder.Frequency, reminder.ScheduledTime)
+
 		// Get user's FCM token
 		var user models.User
 		err := s.db.Collection("users").FindOne(ctx, bson.M{"user_id": reminder.UserID}).Decode(&user)
 		if err != nil {
-			log.Printf("Error fetching user for reminder %s: %v", reminder.ID.Hex(), err)
+			log.Printf("[ERROR] Error fetching user for reminder %s: %v", reminder.ID.Hex(), err)
 			continue
 		}
 
 		if user.FCMToken == nil {
-			log.Printf("No FCM token found for user %s", user.User_id)
+			log.Printf("[ERROR] No FCM token found for user %s", user.User_id)
 			continue
 		}
+
+		log.Printf("[DEBUG] User FCM token: %s", *user.FCMToken)
 
 		// Check if reminder should be sent based on its frequency
 		shouldSend := false
 		switch reminder.Frequency {
 		case "once":
 			// For one-time reminders, check if it's time
-			if reminder.ScheduledTime.Before(now) && reminder.ScheduledTime.After(now.Add(-1*time.Minute)) {
+			reminderTime := reminder.ScheduledTime.In(loc)
+			// Compare only hours and minutes, ignore seconds
+			nowTruncated := time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), 0, 0, loc)
+			reminderTimeTruncated := time.Date(reminderTime.Year(), reminderTime.Month(), reminderTime.Day(),
+				reminderTime.Hour(), reminderTime.Minute(), 0, 0, loc)
+
+			log.Printf("[DEBUG] One-time reminder check: now=%v, scheduled=%v", nowTruncated, reminderTimeTruncated)
+			if nowTruncated.Equal(reminderTimeTruncated) {
 				shouldSend = true
+				log.Printf("[DEBUG] One-time reminder should be sent")
 			}
 		case "daily":
-			// For daily reminders, check if current time matches
+			// For daily reminders, check if current time matches (ignoring seconds)
 			currentTime := now.Format("15:04")
-			if currentTime == reminder.TimeOfDay {
+			scheduledTime := reminder.TimeOfDay
+			log.Printf("[DEBUG] Daily reminder check: current=%s, scheduled=%s", currentTime, scheduledTime)
+
+			if currentTime == scheduledTime {
 				shouldSend = true
+				log.Printf("[DEBUG] Daily reminder should be sent")
 			}
 		case "weekly":
-			// For weekly reminders, check if current day and time match
+			// For weekly reminders, check if current day and time match (ignoring seconds)
 			currentDay := now.Format("Monday")
 			currentTime := now.Format("15:04")
-			if currentDay == reminder.DayOfWeek && currentTime == reminder.TimeOfDay {
+			scheduledTime := reminder.TimeOfDay
+			log.Printf("[DEBUG] Weekly reminder check: day=%s, time=%s, scheduled_day=%s, scheduled_time=%s",
+				currentDay, currentTime, reminder.DayOfWeek, scheduledTime)
+
+			if currentDay == reminder.DayOfWeek && currentTime == scheduledTime {
 				shouldSend = true
+				log.Printf("[DEBUG] Weekly reminder should be sent")
 			}
 		}
 
 		if shouldSend {
-			// Parse notification data
-			var notificationData map[string]interface{}
-			if err := json.Unmarshal([]byte(reminder.NotificationData), &notificationData); err != nil {
-				log.Printf("Error parsing notification data for reminder %s: %v", reminder.ID.Hex(), err)
-				continue
-			}
+			// Check if we've already sent a notification for this reminder in the current minute
+			lastNotificationKey := fmt.Sprintf("last_notification_%s", reminder.ID.Hex())
+			lastNotificationTime, exists := s.lastNotificationTimes[lastNotificationKey]
 
-			// ตรวจสอบ title/body
-			title, okTitle := notificationData["title"].(string)
-			body, okBody := notificationData["body"].(string)
-			if !okTitle || !okBody || title == "" || body == "" {
-				log.Printf("Notification data missing title/body for reminder %s", reminder.ID.Hex())
-				continue
-			}
+			if !exists || !lastNotificationTime.Equal(time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), 0, 0, loc)) {
+				log.Printf("[DEBUG] Preparing to send notification for reminder %s", reminder.ID.Hex())
+				// Parse notification data
+				var notificationData map[string]interface{}
+				if err := json.Unmarshal([]byte(reminder.NotificationData), &notificationData); err != nil {
+					log.Printf("[ERROR] Error parsing notification data for reminder %s: %v", reminder.ID.Hex(), err)
+					continue
+				}
 
-			// Convert notification data to string map for FCM
-			data := make(map[string]string)
-			for k, v := range notificationData {
-				data[k] = fmt.Sprintf("%v", v)
-			}
+				// Extract title, body, and plantName from notification data
+				title, okTitle := notificationData["title"].(string)
+				body, okBody := notificationData["body"].(string)
 
-			// Send notification
-			err = s.SendNotification(*user.FCMToken, title, body, data)
-			if err != nil {
-				log.Printf("Error sending notification for reminder %s: %v", reminder.ID.Hex(), err)
-				continue
-			}
+				if !okTitle || !okBody || title == "" || body == "" {
+					log.Printf("[ERROR] Notification data missing title/body for reminder %s", reminder.ID.Hex())
+					continue
+				}
 
-			// If it's a one-time reminder, mark it as inactive
-			if reminder.Frequency == "once" {
-				_, err = s.db.Collection("reminders").UpdateOne(
-					ctx,
-					bson.M{"_id": reminder.ID},
-					bson.M{"$set": bson.M{"is_active": false}},
-				)
+				// Convert notification data to string map for FCM
+				data := make(map[string]string)
+				for k, v := range notificationData {
+					data[k] = fmt.Sprintf("%v", v)
+				}
+
+				// Send notification
+				err = s.SendNotification(*user.FCMToken, title, body, data)
 				if err != nil {
-					log.Printf("Error updating one-time reminder %s: %v", reminder.ID.Hex(), err)
+					log.Printf("[ERROR] Error sending notification for reminder %s: %v", reminder.ID.Hex(), err)
+					continue
+				}
+				log.Printf("[DEBUG] Successfully sent notification for reminder %s", reminder.ID.Hex())
+
+				// Update last notification time
+				s.lastNotificationTimes[lastNotificationKey] = time.Date(now.Year(), now.Month(), now.Day(), now.Hour(), now.Minute(), 0, 0, loc)
+
+				// If it's a one-time reminder, mark it as inactive
+				if reminder.Frequency == "once" {
+					_, err = s.db.Collection("reminders").UpdateOne(
+						ctx,
+						bson.M{"_id": reminder.ID},
+						bson.M{"$set": bson.M{"is_active": false}},
+					)
+					if err != nil {
+						log.Printf("[ERROR] Error updating one-time reminder %s: %v", reminder.ID.Hex(), err)
+					} else {
+						log.Printf("[DEBUG] Marked one-time reminder %s as inactive", reminder.ID.Hex())
+					}
 				}
 			}
 		}
 	}
 
 	return nil
+}
+
+// Helper function to parse time string to int
+func parseInt(s string) int {
+	var i int
+	fmt.Sscanf(s, "%d", &i)
+	return i
 }
