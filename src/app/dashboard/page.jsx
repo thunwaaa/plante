@@ -18,6 +18,16 @@ import { auth } from '@/lib/firebase'
 import { onAuthStateChanged } from 'firebase/auth'
 import { requestNotificationPermission } from '@/lib/notification'
 
+// ฟังก์ชันแปลงวันที่เป็นรูปแบบไทย (วัน เดือน ปี พ.ศ.)
+function formatThaiDate(date) {
+  if (!date) return '';
+  const d = new Date(date);
+  const day = d.getDate();
+  const month = d.toLocaleString('th-TH', { month: 'long' });
+  const year = d.getFullYear() + 543;
+  return `${day} ${month} ${year}`;
+}
+
 const page = () => {
   const router = useRouter()
   const [plants, setPlants] = useState([]);
@@ -169,43 +179,12 @@ const page = () => {
   }
 
   const handleDelete = async (plantId) => {
-    const token = localStorage.getItem('token');
-    if (!token) {
-      router.push('/login');
-      return;
-    }
-
     try {
-      const response = await fetch(`${API_URL}/plants/${plantId}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (!response.ok) {
-        if (response.status === 401) {
-          localStorage.removeItem('token');
-          localStorage.removeItem('user');
-          router.push('/login');
-          return;
-        }
-        throw new Error(`Failed to delete plant: ${response.statusText}`);
-      }
-
+      await plantApi.deletePlant(plantId);
       setPlants(plants.filter(plant => plant._id !== plantId));
       setOpenDialog(null);
     } catch (err) {
       console.error('Error deleting plant:', err);
-      if (err.message.includes('401') || 
-          err.message.includes('unauthorized') || 
-          err.message.includes('token')) {
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-        router.push('/login');
-        return;
-      }
       setError('Failed to delete plant. Please try again.');
     }
   }
@@ -285,7 +264,7 @@ const page = () => {
               <h2 className="text-xl font-bold">{plant.name}</h2>
               <p>ประเภท: {plant.type}</p>
               <p>ความสูง: {plant.plant_height} cm</p>
-              <p>วันที่ปลูก: {format(new Date(plant.plant_date), 'dd/MM/yyyy')}</p>
+              <p>วันที่ปลูก: {formatThaiDate(plant.plant_date)}</p>
               <p>ภาชนะ: {plant.container}</p>
 
               <div className="flex justify-end mt-4 gap-2">

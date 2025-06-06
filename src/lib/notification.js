@@ -114,8 +114,8 @@ export const onMessageListener = () => {
                     // Create notification
                     const notificationOptions = {
                         body,
-                        icon: '/plantelogo.svg',
-                        badge: '/plantelogo.svg',
+                        icon: '/plantelogowhite.svg',
+                        badge: '/plantelogowhite.svg',
                         tag: `reminder-${reminder.plantId}`,
                         requireInteraction: true,
                         actions: [
@@ -150,8 +150,8 @@ export const onMessageListener = () => {
                     try {
                         new Notification(notification.title, {
                             body: notification.body,
-                            icon: '/plantelogo.svg',
-                            badge: '/plantelogo.svg'
+                            icon: '/plantelogowhite.svg',
+                            badge: '/plantelogowhite.svg'
                         });
                     } catch (error) {
                         console.error('Error creating regular notification:', error);

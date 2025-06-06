@@ -64,7 +64,6 @@ func SetupRoutes(router *gin.Engine, authService *services.AuthService) {
 					"user_id":       user.User_id,
 					"email":         user.Email,
 					"name":          user.Name,
-					"username":      user.Username,
 					"role":          user.Role,
 					"is_verified":   user.IsVerified,
 					"provider":      user.Provider,

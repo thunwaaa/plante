@@ -281,7 +281,7 @@ const ReminderDetailPage = () => {
                                 const reminderTime = new Date(reminder.scheduledTime && reminder.scheduledTime.$date ? reminder.scheduledTime.$date : reminder.scheduledTime);
 
                                 return (
-                                    <div key={reminder.id} className="rounded-lg p-4 shadow border">
+                                    <div key={reminder.id} className="rounded-lg p-4 shadow border transition delay-75 duration-100 ease-in-out hover:-translate-y-1 hover:scale-95 bg-[#E6E4BB]">
                                         <div className="flex justify-between items-start">
                                             <div className="flex-1">
                                                 <div className="flex items-center gap-2 mb-2">

@@ -11,7 +11,6 @@ type User struct {
 	User_id      string             `bson:"user_id" json:"user_id"`
 	Email        *string            `bson:"email" json:"email"`
 	Name         *string            `bson:"name" json:"name"`
-	Username     *string            `bson:"username" json:"username"`
 	Password     *string            `bson:"password" json:"-"`
 	Role         string             `bson:"role" json:"role"`
 	FCMToken     *string            `bson:"fcm_token,omitempty" json:"fcm_token,omitempty"`
@@ -31,7 +30,6 @@ type User struct {
 type UserResponse struct {
 	ID              string    `json:"id"`
 	Email           string    `json:"email"`
-	Username        string    `json:"username"`
 	Role            string    `json:"role"`
 	Provider        string    `json:"provider"`
 	IsVerified      bool      `json:"is_verified"`

@@ -36,7 +36,7 @@ func Signup() gin.HandlerFunc {
 		}
 
 		// Validate required fields
-		if user.Email == nil || user.Password == nil || user.Name == nil || user.Username == nil {
+		if user.Email == nil || user.Password == nil || user.Name == nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": "All fields are required"})
 			return
 		}

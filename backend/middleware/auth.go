@@ -97,14 +97,12 @@ func (m *AuthMiddleware) AuthMiddleware(next http.HandlerFunc) http.HandlerFunc 
 				// Create new user
 				email := firebaseUser.Email
 				name := firebaseUser.DisplayName
-				username := firebaseUser.DisplayName
 				profileImageURL := firebaseUser.PhotoURL
 				newUser := models.User{
 					ID:              primitive.NewObjectID(),
 					User_id:         token.UID,
 					Email:           &email,
 					Name:            &name,
-					Username:        &username,
 					Role:            "user",
 					Provider:        "firebase",
 					IsVerified:      firebaseUser.EmailVerified,
@@ -227,14 +225,12 @@ func (m *AuthMiddleware) GinAuthMiddleware() func(c *gin.Context) {
 				}
 				email := firebaseUser.Email
 				name := firebaseUser.DisplayName
-				username := firebaseUser.DisplayName
 				profileImageURL := firebaseUser.PhotoURL
 				newUser := models.User{
 					ID:              primitive.NewObjectID(),
 					User_id:         token.UID,
 					Email:           &email,
 					Name:            &name,
-					Username:        &username,
 					Role:            "user",
 					Provider:        "firebase",
 					IsVerified:      firebaseUser.EmailVerified,

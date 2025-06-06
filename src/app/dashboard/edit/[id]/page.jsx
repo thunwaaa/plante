@@ -34,6 +34,15 @@ import {
 } from "@/components/ui/popover"
 import { API_URL } from '@/lib/api'
 
+// ฟังก์ชันแปลงวันที่เป็นรูปแบบไทย (วัน เดือน ปี พ.ศ.)
+function formatThaiDate(date) {
+  if (!date) return '';
+  const day = date.getDate();
+  const month = date.toLocaleString('th-TH', { month: 'long' });
+  const year = date.getFullYear() + 543;
+  return `${day} ${month} ${year}`;
+}
+
 const EditPlantPage = ({ params }) => {
   const resolvedParams = React.use(params);
   const { id } = resolvedParams;
@@ -263,10 +272,18 @@ const EditPlantPage = ({ params }) => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="ไม้ผล">ไม้ผล</SelectItem>
+                  <SelectItem value="ไม้ผล">ไม้ผล</SelectItem>
                     <SelectItem value="ไม้ดอก">ไม้ดอก</SelectItem>
                     <SelectItem value="ไม้ประดับ">ไม้ประดับ</SelectItem>
                     <SelectItem value="สมุนไพร">สมุนไพร</SelectItem>
+                    <SelectItem value="ไม้ยืนต้น">ไม้ยืนต้น</SelectItem>
+                    <SelectItem value="ไม้พุ่ม">ไม้พุ่ม</SelectItem>
+                    <SelectItem value="ไม้เลื้อย">ไม้เลื้อย</SelectItem>
+                    <SelectItem value="ไม้คลุมดิน">ไม้คลุมดิน</SelectItem>
+                    <SelectItem value="ไม้กระถาง">ไม้กระถาง</SelectItem>
+                    <SelectItem value="ไม้น้ำ">ไม้น้ำ</SelectItem>
+                    <SelectItem value="พืชผักสวนครัว">พืชผักสวนครัว</SelectItem>
+                    <SelectItem value="พืชใบเลี้ยงคู่">พืชใบเลี้ยงคู่</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -285,7 +302,7 @@ const EditPlantPage = ({ params }) => {
                     disabled={saving}
                   >
                     <Calendar1Icon />
-                    {date ? format(date, "PPP") : <span>เลือกวันที่</span>}
+                    {date ? formatThaiDate(date) : <span>เลือกวันที่</span>}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align='start'>
@@ -314,17 +331,21 @@ const EditPlantPage = ({ params }) => {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectGroup>
-                    <SelectItem value="กระถาง">กระถาง</SelectItem>
-                    <SelectItem value="ถุงพลาสติก">ถุงพลาสติก</SelectItem>
-                    <SelectItem value="กระบะ">กระบะ</SelectItem>
-                    <SelectItem value="แปลงดิน">แปลงดิน</SelectItem>
+                  <SelectItem value="กระถาง">กระถาง</SelectItem>
+                  <SelectItem value="กระบะ">กระบะ</SelectItem>
+                  <SelectItem value="แปลงดิน">แปลงดิน</SelectItem>
+                  <SelectItem value="กระถางแขวน">กระถางแขวน</SelectItem>
+                  <SelectItem value="แจกันแก้ว">แจกันแก้ว</SelectItem>
+                  <SelectItem value="กระถางเซรามิก">กระถางเซรามิก</SelectItem>
+                  <SelectItem value="ขวดพลาสติกดัดแปลง">ขวดพลาสติกดัดแปลง</SelectItem>
+                  <SelectItem value="กล่องไม้">กล่องไม้</SelectItem>
                   </SelectGroup>
                 </SelectContent>
               </Select>
             </div>
 
             <div className="w-64 md:w-[calc(50%-1rem)]">
-              <p>ความสูงของต้นไม้ (เซนติเมตร)</p>
+              <p>ความสูงของต้นไม้ (cm)</p>
               <input 
                 type="number"
                 value={plantHeight}

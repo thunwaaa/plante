@@ -84,7 +84,6 @@ func (s *AuthService) CreateOrUpdateUser(firebaseUser *auth.UserRecord) (*models
 		update := bson.M{
 			"$set": bson.M{
 				"email":         firebaseUser.Email,
-				"username":      firebaseUser.DisplayName,
 				"provider":      firebaseUser.ProviderID,
 				"is_verified":   firebaseUser.EmailVerified,
 				"last_login_at": now,

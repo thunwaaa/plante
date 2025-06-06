@@ -4,6 +4,16 @@ import { useRouter } from 'next/navigation'
 import { plantApi } from '@/lib/api'
 import { API_URL } from '@/lib/api'
 
+// ฟังก์ชันแปลงวันที่เป็นรูปแบบไทย (วัน เดือน ปี พ.ศ.)
+function formatThaiDate(date) {
+    if (!date) return '';
+    const d = new Date(date);
+    const day = d.getDate();
+    const month = d.toLocaleString('th-TH', { month: 'long' });
+    const year = d.getFullYear() + 543;
+    return `${day} ${month} ${year}`;
+}
+
 const ReminderPage = () => {
     const router = useRouter()
     const [plants, setPlants] = useState([])
@@ -76,7 +86,7 @@ const ReminderPage = () => {
                         <h2 className="text-xl font-bold">{plant.name}</h2>
                         <p>ประเภท: {plant.type}</p>
                         <p>ความสูง: {plant.plant_height} cm</p>
-                        <p>วันที่ปลูก: {new Date(plant.plant_date).toLocaleDateString('th-TH')}</p>
+                        <p>วันที่ปลูก: {formatThaiDate(plant.plant_date)}</p>
 
                         <div className="flex justify-center mt-4 gap-2">
                             <button 

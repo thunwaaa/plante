@@ -68,13 +68,13 @@ const DiaryDetailPage = () => {
 
     const handleAddGrowthRecord = async () => {
         try {
-            if (!newGrowth.height) {
-                setError('กรุณาระบุความสูงของต้นไม้');
-                return;
-            }
+            const oldHeight = plant.plant_height || 0;
+            const newHeight = newGrowth.height ? parseFloat(newGrowth.height) : oldHeight;
+            const heightDifference = newHeight - oldHeight;
 
             const growthData = {
-                height: parseFloat(newGrowth.height),
+                height: newHeight,
+                height_difference: heightDifference,
                 mood: newGrowth.mood,
                 notes: newGrowth.notes,
                 date: new Date(newGrowth.date).toISOString()
@@ -236,6 +236,16 @@ const DiaryDetailPage = () => {
         };
     }, [id]); // Depend on id to re-run effect when id changes
 
+    // ฟังก์ชันแปลงวันที่เป็นรูปแบบไทย (วัน เดือน ปี พ.ศ.)
+    function formatThaiDate(dateStr) {
+        if (!dateStr) return '';
+        const d = new Date(dateStr);
+        const day = d.getDate();
+        const month = d.toLocaleString('th-TH', { month: 'long' });
+        const year = d.getFullYear() + 543;
+        return `${day} ${month} ${year}`;
+    }
+
     if (loading) {
         return (
             <div className="flex justify-center items-center min-h-screen">
@@ -362,10 +372,28 @@ const DiaryDetailPage = () => {
                                         {/* Growth trend indicator */}
                                         {index < plant.growth_records.length - 1 && (
                                             <div className="mt-2 flex items-center text-sm">
-                                                <TrendingUp className="w-4 h-4 mr-1 text-green-600" />
-                                                <span className="text-green-600">
-                                                    {`เพิ่มขึ้น ${Math.abs(getGrowthTrend(plant.growth_records, index))} cm`}
-                                                </span>
+                                                {record.height_difference > 0 ? (
+                                                    <>
+                                                        <TrendingUp className="w-4 h-4 mr-1 text-green-600" />
+                                                        <span className="text-green-600">
+                                                            {`เพิ่มขึ้น ${Math.abs(record.height_difference)} cm`}
+                                                        </span>
+                                                    </>
+                                                ) : record.height_difference < 0 ? (
+                                                    <>
+                                                        <TrendingUp className="w-4 h-4 mr-1 text-red-600 transform rotate-180" />
+                                                        <span className="text-red-600">
+                                                            {`ลดลง ${Math.abs(record.height_difference)} cm`}
+                                                        </span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <TrendingUp className="w-4 h-4 mr-1 text-gray-600" />
+                                                        <span className="text-gray-600">
+                                                            {`ความสูงคงที่`}
+                                                        </span>
+                                                    </>
+                                                )}
                                             </div>
                                         )}
                                     </div>
@@ -399,7 +427,7 @@ const DiaryDetailPage = () => {
                                     <input
                                         type="text"
                                         inputMode="numeric"
-                                        pattern="^\d+$"
+                                        pattern="^\d*$"
                                         title="กรุณากรอกเลขเต็มบวกเท่านั้น"
                                         value={newGrowth.height}
                                         onChange={(e) => {
@@ -410,7 +438,7 @@ const DiaryDetailPage = () => {
                                             }
                                         }}
                                         className="w-full border border-[#373E11] rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#373E11] focus:border-transparent"
-                                        required
+                                        placeholder="ไม่บังคับกรอก"
                                     />
                                 </div>
 
@@ -448,6 +476,11 @@ const DiaryDetailPage = () => {
                                         className="w-full border border-[#373E11] rounded-lg px-3 py-2 focus:ring-2 focus:ring-[#373E11] focus:border-transparent"
                                         required
                                     />
+                                    {newGrowth.date && (
+                                        <div className="text-sm text-gray-600 mt-1">
+                                            วันที่ที่เลือก (พ.ศ.): {formatThaiDate(newGrowth.date)}
+                                        </div>
+                                    )}
                                 </div>
 
                                 <button
