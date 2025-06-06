@@ -328,6 +328,14 @@ const AddReminderPage = () => {
               className="mt-1 block w-full pl-3 pr-3 py-2 text-base border focus:outline-none focus:ring-[#373E11] focus:border-[#373E11] sm:text-sm rounded-md"
               required
             />
+            {reminderData.scheduledDate && (
+              <div className="text-sm text-gray-600 mt-1">
+                วันที่ที่เลือก (พ.ศ.): {(() => {
+                  const [y, m, d] = reminderData.scheduledDate.split("-");
+                  return `${d}/${m}/${parseInt(y, 10) + 543}`;
+                })()}
+              </div>
+            )}
             <label className="block text-lg font-semibold my-2">เวลา:</label>
             <input
               type="time"

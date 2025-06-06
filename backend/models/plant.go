@@ -7,12 +7,13 @@ import (
 )
 
 type GrowthRecord struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
-	Height    float64            `bson:"height" json:"height"`
-	Mood      string             `bson:"mood" json:"mood"`
-	Notes     string             `bson:"notes" json:"notes"`
-	Date      time.Time          `bson:"date" json:"date"`
-	CreatedAt time.Time          `bson:"created_at" json:"created_at"`
+	ID               primitive.ObjectID `bson:"_id,omitempty" json:"_id,omitempty"`
+	Height           float64            `bson:"height" json:"height"`
+	HeightDifference float64            `bson:"height_difference" json:"height_difference"`
+	Mood             string             `bson:"mood" json:"mood"`
+	Notes            string             `bson:"notes" json:"notes"`
+	Date             time.Time          `bson:"date" json:"date"`
+	CreatedAt        time.Time          `bson:"created_at" json:"created_at"`
 }
 
 type Plant struct {

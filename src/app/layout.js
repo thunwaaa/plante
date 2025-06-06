@@ -8,11 +8,11 @@ const gelasioSans = Gelasio({
 });
 
 export const metadata = {
-  title: "Plante - Your Plant Care Companion",
+  title: "Plante",
   description: "Plante helps you take better care of your plants with smart diagnosis, care reminders, and personalized recommendations",
   keywords: "plant care, plant diagnosis, gardening, plant health, plant care app",
   openGraph: {
-    title: "Plante - Your Plant Care Companion",
+    title: "Plante",
     description: "Smart plant care app for better gardening",
     type: "website",
   },

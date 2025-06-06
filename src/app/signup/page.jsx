@@ -24,7 +24,6 @@ export default function SignupPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [username, setUsername] = useState("");
   const [error, setError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
@@ -36,7 +35,7 @@ export default function SignupPage() {
 
     try {
       // Validate input
-      if (!email || !password || !username) {
+      if (!email || !password) {
         throw new Error("Please fill in all fields");
       }
 
@@ -44,12 +43,6 @@ export default function SignupPage() {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       console.log("User created successfully:", userCredential.user.uid);
       
-      // Update profile with username
-      await updateProfile(userCredential.user, {
-        displayName: username
-      });
-      console.log("Profile updated with username");
-
       // Send email verification
       try {
         await sendEmailVerification(userCredential.user);
@@ -164,16 +157,6 @@ export default function SignupPage() {
           <p> Enter your information to create your account</p>
           {error && <p className="text-red-500 mb-4">{error}</p>}
           <form onSubmit={handleEmailSignup} className='flex flex-col text-lg space-y-2 w-3/4 max-w-md mt-4'>
-            <label htmlFor="username" className='font-bold'>Username</label>
-            <input 
-              id='username'
-              type="text" 
-              required 
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className='border border-[#373E11] rounded-lg h-12 p-2 text-base'
-              placeholder='Enter your username'
-            />
             <label htmlFor="signup-email-desktop" className='font-bold'>Email</label>
             <input 
               id='signup-email-desktop'
@@ -274,16 +257,6 @@ export default function SignupPage() {
             <p>Enter your information to create your account</p>
             {error && <p className="text-red-500 mb-4">{error}</p>}
             <form onSubmit={handleEmailSignup} className='flex flex-col w-full max-w-md space-y-3 mt-4'>
-              <label htmlFor="username" className="text-xl max-sm:text-lg">Username</label>
-              <input 
-                id='username'
-                type="text" 
-                required 
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                className='border border-[#373E11] rounded-lg h-12 p-2 text-lg'
-                placeholder='Enter your Name'
-              />
               <label htmlFor="signup-email-mobile" className="text-xl">Email</label>
               <input 
                 id='signup-email-mobile'

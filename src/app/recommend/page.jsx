@@ -99,9 +99,9 @@ const page = () => {
                     </SelectTrigger>
                     <SelectContent>
                     <SelectGroup>
-                        <SelectItem value="มาก">มาก</SelectItem>
-                        <SelectItem value="ปานกลาง">ปานกลาง</SelectItem>
-                        <SelectItem value="น้อย">น้อย</SelectItem>
+                        <SelectItem value="มาก">มาก (8 ชม./วัน)</SelectItem>
+                        <SelectItem value="ปานกลาง">ปานกลาง (4-5 ชม./วัน)</SelectItem>
+                        <SelectItem value="น้อย">น้อย (3 ชม./วัน)</SelectItem>
                     </SelectGroup>
                     </SelectContent>
                 </Select>

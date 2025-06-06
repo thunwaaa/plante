@@ -81,10 +81,21 @@ const ResultsPage = () => {
       <h1 className='text-3xl md:text-4xl font-bold text-center m-3 mt-8'>พืชที่เหมาะสมกับคุณ</h1>
       <p className='text-center'>{recommendedPlants.length} ต้นที่ตรงกับเงื่อนไขของคุณ</p>
 
+      {recommendedPlants.length > 0 && (
+        <div className="text-center my-2 flex justify-center">
+          <button
+            onClick={() => router.push('/recommend')}
+            className="bg-[#373E11] text-white px-4 py-2 rounded-md hover:bg-[#454b28] transition-colors delay-75 duration-100 ease-in-out hover:-translate-y-1 hover:scale-110"
+          >
+            ค้นหาใหม่
+          </button>
+        </div>
+      )}
+
       {recommendedPlants.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto p-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto p-6 ">
           {recommendedPlants.map(plant => (
-            <div key={plant.id} className="border rounded-lg p-4 shadow-md flex flex-col">
+            <div key={plant.id} className="bg-[#E6E4BB] border rounded-lg p-4 shadow-md flex flex-col transition delay-75 duration-100 ease-in-out hover:-translate-y-1 hover:scale-110">
               <div className="w-full aspect-[3/2] bg-[#E6E4BB] rounded-md mb-4 overflow-hidden flex items-center justify-center">
                 {plant.image ? (
                   <img 
@@ -103,7 +114,7 @@ const ResultsPage = () => {
                 )}
               </div>
               <h2 className="text-xl font-bold mb-2 underline">{plant.name}</h2>
-              <p className="text-sm text-[#373E11] mb-4 flex-grow">{plant.description}</p>
+              <p className="text-sm mb-4 flex-grow ">{plant.description}</p>
               <div className="grid grid-cols-2 gap-2 text-sm">
                 <p>❤️ {plant.careLevel}</p>
                 <p>☀️ {plant.conditions.แสง.join(', ')}</p>
@@ -112,7 +123,7 @@ const ResultsPage = () => {
               </div>
               <div className="mt-4">
                 {plant.tags.map(tag => (
-                  <span key={tag} className="border inline-block bg-[#373E11] rounded-full px-3 py-1 text-sm font-semibold text-[#E6E4BB] mr-2 mb-2">
+                  <span key={tag} className="border inline-block bg-[#373E11] rounded-full px-3 py-1 text-sm font-semibold text-[#E6E4BB] mr-2 mb-2 ">
                     {tag}
                   </span>
                 ))}
@@ -132,16 +143,6 @@ const ResultsPage = () => {
         </div>
       )}
 
-      {recommendedPlants.length > 0 && (
-        <div className="text-center mt-8 mb-8">
-          <button
-            onClick={() => router.push('/recommend')}
-            className="bg-[#373E11] text-white px-4 py-2 rounded-md hover:bg-[#454b28] transition-colors"
-          >
-            ค้นหาใหม่
-          </button>
-        </div>
-      )}
     </>
   );
 };

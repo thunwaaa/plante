@@ -415,8 +415,10 @@ func AddGrowthRecord() gin.HandlerFunc {
 		newRecord.ID = primitive.NewObjectID()
 		newRecord.CreatedAt = time.Now()
 
-		// Calculate new height
-		plant.PlantHeight += newRecord.Height
+		// Calculate height difference and update plant height
+		oldHeight := plant.PlantHeight
+		plant.PlantHeight = newRecord.Height
+		newRecord.HeightDifference = newRecord.Height - oldHeight
 
 		// Add new record to the beginning of the slice (for reverse chronological order display)
 		plant.GrowthRecords = append([]models.GrowthRecord{newRecord}, plant.GrowthRecords...)
@@ -506,16 +508,18 @@ func UpdateGrowthRecord() gin.HandlerFunc {
 		}
 
 		// Calculate height difference
-		heightDiff := updateData.Height - plant.GrowthRecords[recordIndex].Height
+		oldHeight := plant.GrowthRecords[recordIndex].Height
+		heightDiff := updateData.Height - oldHeight
 
 		// Update the record
 		plant.GrowthRecords[recordIndex].Height = updateData.Height
+		plant.GrowthRecords[recordIndex].HeightDifference = heightDiff
 		plant.GrowthRecords[recordIndex].Mood = updateData.Mood
 		plant.GrowthRecords[recordIndex].Notes = updateData.Notes
 		plant.GrowthRecords[recordIndex].Date = updateData.Date
 
 		// Update plant height
-		plant.PlantHeight += heightDiff
+		plant.PlantHeight = updateData.Height
 
 		// Prepare update fields
 		update := bson.M{

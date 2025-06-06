@@ -211,7 +211,7 @@ export default function LoginPage() {
         </div>
         {/* Right panel with sign-in form */}
         <div className='flex flex-col justify-center items-center self-center w-1/2'>
-          <h1 className="text-4xl font-bold underline mb-3">Login</h1>
+          <h1 className="text-4xl font-bold underline mb-3">Sign in</h1>
           <p className="mt-3">Enter your email to sign in to your account</p>
           <form onSubmit={handleEmailLogin} className='flex flex-col text-2xl space-y-3 w-3/4 max-w-md mt-4'>
             <label htmlFor="email-desktop">Email</label>
@@ -304,7 +304,7 @@ export default function LoginPage() {
 
           {/* Form container */}
           <div className='flex flex-col items-center px-4 py-3 w-full'>
-            <h1 className="text-3xl font-bold mb-5 underline">Login</h1>
+            <h1 className="text-3xl font-bold mb-5 underline">Sign in</h1>
             {error && <p className="text-red-500 mb-4">{error}</p>}
             <form onSubmit={handleEmailLogin} className='flex flex-col w-full max-w-md space-y-3'>
               <label htmlFor="email" className="text-xl">Email</label>

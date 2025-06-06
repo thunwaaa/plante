@@ -40,13 +40,13 @@ func main() {
 		// Update user document
 		update := bson.M{
 			"$set": bson.M{
-				"firebase_uid": user.User_id,  // Copy user_id to firebase_uid
-				"name":         user.Username, // Copy username to name
+				"firebase_uid": user.User_id, // Copy user_id to firebase_uid
 				"updated_at":   time.Now(),
 			},
 			"$unset": bson.M{
 				"password": "", // Remove password field
 				"role":     "", // Remove role field
+				"username": "", // Remove username field
 			},
 		}
 
