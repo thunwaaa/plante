@@ -55,6 +55,7 @@ go mod tidy
 go run main.go
 ```
 Backend will be available at 👉 http://localhost:8080
+
 ---
 
 ### 2. Clone the Project
